@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  BANNED_PUBLIC_COPY_PHRASES,
+  collectPublicationCopyStrings,
   EVIDENCE_SNAPSHOT,
   SOURCE_COVERAGE,
   snapshotHasNoRemoteActions,
@@ -12,6 +14,8 @@ describe("EVIDENCE_SNAPSHOT checked-in record", () => {
     expect(EVIDENCE_SNAPSHOT.publicationDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(EVIDENCE_SNAPSHOT.title.toLowerCase()).toContain("cached");
     expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /does not fetch/i.test(s))).toBe(true);
+    expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /6 reviewed in full/i.test(s))).toBe(true);
+    expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /not quantitatively fitted/i.test(s))).toBe(true);
   });
 
   it("shares one authoritative SOURCE_COVERAGE list with honest full/partial scopes", () => {
@@ -27,13 +31,21 @@ describe("EVIDENCE_SNAPSHOT checked-in record", () => {
       expect(s.url.startsWith("https://")).toBe(true);
       expect(s.statusLabel.toLowerCase()).toContain("reviewed offline");
       expect(s.executedHere).toBe(false);
-      expect(s.statusLabel.toLowerCase()).not.toContain("not ingested");
-      expect(s.statusLabel.toLowerCase()).not.toContain("dossier digested");
       expect(Object.keys(s)).not.toContain("scrapedAt");
       expect(Object.keys(s)).not.toContain("checkedAt");
     }
-    expect(SOURCE_COVERAGE.find((s) => s.id === "evmbench")!.statusLabel).toMatch(/benchmark not run/i);
+    expect(SOURCE_COVERAGE.find((s) => s.id === "evmbench")!.statusLabel).toMatch(/harness not run here/i);
     expect(SOURCE_COVERAGE.find((s) => s.id === "hive")!.statusLabel).toMatch(/partial/i);
+    expect(SOURCE_COVERAGE.find((s) => s.id === "hive")!.statusLabel).toMatch(/not a calibrated L1 outage rate/i);
+  });
+
+  it("bans outdated ingest/reference jargon in publication copy strings", () => {
+    const blob = collectPublicationCopyStrings().join("\n").toLowerCase();
+    for (const phrase of BANNED_PUBLIC_COPY_PHRASES) {
+      expect(blob).not.toContain(phrase.toLowerCase());
+    }
+    // also ban bare 'ingested' / 'ingest' stems in these strings
+    expect(blob).not.toMatch(/\bingest/i);
   });
 
   it("snapshotHasNoRemoteActions stays true for the checked-in object", () => {
