@@ -43,7 +43,7 @@ export function EvidenceSnapshotPanel() {
             <thead>
               <tr>
                 <th scope="col">Source</th>
-                <th scope="col">Coverage</th>
+                <th scope="col">Review status</th>
               </tr>
             </thead>
             <tbody>

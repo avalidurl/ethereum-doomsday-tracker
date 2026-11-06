@@ -251,8 +251,9 @@ export function Essay({ year, scenario, onScenario }: Props) {
           OpenAI + Paradigm introduced EVMbench (public post 18 February 2026) with three modes — Detect, Patch, Exploit
           — and different denominators. Published metadata: 117 curated vulnerabilities from 40 audits; Rust harness;
           historical vulns; isolated Anvil (not live networks). Blog-reported exploit-mode example: GPT‑5.3‑Codex via
-          Codex CLI 71.0% vs GPT‑5 33.3%. Detect/patch remain below full coverage. Content reviewed offline for this
-          publication; the EVMbench harness is not run on this site.
+          Codex CLI 71.0% vs GPT‑5 33.3%. Detect/patch remain below full coverage. Those figures are described from the
+          published writeup (reviewed offline); the EVMbench harness is not run on this site and is not fitted into L1
+          hazard rates.
         </p>
         <table className="data">
           <thead>
@@ -290,16 +291,17 @@ export function Essay({ year, scenario, onScenario }: Props) {
         <p>
           Anthropic’s smart-contract / SCONE line emphasizes agent success with simulated economic loss. Borrowed
           concepts without inventing a scoreboard: success rate; held-out / post-cutoff vs retrospective evaluation;
-          outlier sensitivity; simulated losses ≠ observed real-world losses. Content reviewed offline; SCONE is not run
-          on this site.
+          outlier sensitivity; simulated losses ≠ observed real-world losses. Published results are described from the
+          research pages (reviewed offline); SCONE is not run on this site and is not fitted into L1 hazard rates.
         </p>
       </Chapter>
 
       <Chapter id="hive" roman="VII" title="Hive client health">
         <p>
           Hive-style matrices cross clients with test families: pass / fail / unsupported / unknown. Useful for
-          monitoring diversity. Offline review covered the public listing aggregate (partial); this page does not live-fetch
-          Hive. Client health ≠ calibrated L1 outage odds.
+          monitoring diversity. Offline review covered the public listing aggregate (partial scope). This page keeps a
+          static summary and does not live-fetch Hive. Client health is not a calibrated L1 outage rate, and no direct
+          public outage-rate evidence is claimed here.
         </p>
       </Chapter>
 
@@ -326,7 +328,7 @@ export function Essay({ year, scenario, onScenario }: Props) {
         <ul className="subs">
           <li>Fréchet union bounds + named dependence scenarios (not fitted ρ)</li>
           <li>Liquidity vs crowd size vs resolution precision</li>
-          <li>Immutable snapshots before any future ingestion</li>
+          <li>Immutable snapshots before any future automated source updates</li>
         </ul>
       </Chapter>
 
@@ -362,15 +364,17 @@ export function Essay({ year, scenario, onScenario }: Props) {
 
       <Chapter id="sources" roman="XI" title="Sources">
         <p>
-          Same coverage labels as the cached evidence snapshot. Evidence was reviewed offline before publish; opening
-          this page does not fetch sources. Benchmark harnesses are not executed here. Model assumptions are tracked
-          separately in the prior registry.
+          Same status labels as the cached evidence snapshot (6 sources reviewed in full, 2 in partial scope). Evidence
+          was reviewed offline before publish; this page shows a static summary and does not fetch or scrape sources when
+          opened. Published benchmark results are described from papers/pages — harnesses are not run here. Sources may
+          inform mechanism notes but are not quantitatively fitted into leaf hazard rates; direct public calibrated rates
+          for those L1 hazards remain absent. Model assumptions are tracked separately in the prior registry.
         </p>
         <table className="data">
           <thead>
             <tr>
               <th>Source</th>
-              <th>Coverage</th>
+              <th>Review status</th>
             </tr>
           </thead>
           <tbody>

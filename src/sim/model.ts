@@ -1,5 +1,5 @@
 /**
- * Ethereum L1 systemic-security scenario model v0.3.3 (mean chart trajectories; effective Q center)
+ * Ethereum L1 systemic-security scenario model v0.3.4 (source-status copy clarity; no math change from 0.3.3)
  *
  * Headline: unconditional scenario mean E[P(H_Y|θ)].
  * Fréchet: on mean channel marginals (theft, client) — same estimand family as the mean.
@@ -23,7 +23,7 @@ import {
 } from "./knots";
 import { sampleYearFromKnots } from "./knots";
 
-export const PAGE_VERSION = "0.3.3";
+export const PAGE_VERSION = "0.3.4";
 export const PAGE_UPDATED = "2026-11-06";
 export const ANCHOR_DATE = "2026-11-06";
 export const MODEL_VERSION = REGISTRY_VERSION;
