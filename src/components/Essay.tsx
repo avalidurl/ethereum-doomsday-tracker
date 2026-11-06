@@ -48,11 +48,10 @@ export function Essay({ year, scenario, onScenario }: Props) {
     <article className="essay">
       <Chapter id="thesis" roman="I" title="Thesis and boundaries">
         <p>
-          This publication is an original illustrative risk brief for a proposed question about Ethereum base-layer
-          systemic security failure. It borrows analytical constructs familiar from forecasting platforms and security
-          benchmarks — resolution criteria, parameter-spread bands, scenario branches, evidence matrices, provenance —
-          while using an original editorial layout. It is not a clone of Metaculus, AI 2027, AI 2040, or Commanding
-          Heights, and it does not impersonate their interfaces or identities.
+          This publication is an illustrative risk brief for a proposed question about Ethereum base-layer systemic
+          security failure. It uses forecasting and security-benchmark constructs — resolution criteria, parameter-spread
+          bands, scenario branches, evidence matrices, provenance — in a long-form editorial layout with a sticky
+          forecast rail.
         </p>
         <p>
           Over the next one to three decades, two analytically distinct L1 hazard families can, under stressed
@@ -74,8 +73,8 @@ export function Essay({ year, scenario, onScenario }: Props) {
             not for trading or calibrated doom odds.
           </Pill>
           <Pill title="What this is not">
-            Not a live market, not ingested Causis/GRI/Metaculus numbers, not executed EVMbench/SCONE/Hive runs, not an
-            official Ethereum Foundation position.
+            Not a live market; not ingested Causis/GRI/Metaculus numbers; not executed EVMbench/SCONE/Hive runs; not
+            calibrated doom odds.
           </Pill>
           <Pill title="Title caveat">
             “Doomsday” is editorial shorthand. Resolution criteria carefully distinguish temporary outage from permanent
@@ -417,9 +416,8 @@ export function Essay({ year, scenario, onScenario }: Props) {
         </table>
         <p>
           Implementation: Vite + React + TypeScript; self-hosted OFL fonts (EB Garamond, Source Sans 3, Source Code Pro);
-          no network calls from the page; Squiggle not used at runtime. Visual language references AI 2040 (cream, deep
-          red, sticky analytical rail) and Commanding Heights (centered masthead, roman spine) without copying their
-          identity, logos, or narrative.
+          no network calls from the page; Squiggle not used at runtime. Fonts under their respective SIL Open Font
+          License terms via Fontsource.
         </p>
         <p>
           Version 0.2.0 (2026-11-06 Europe/Istanbul): expanded tracker ported from the illustrative Cursor Page to a
