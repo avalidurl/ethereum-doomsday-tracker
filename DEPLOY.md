@@ -88,3 +88,12 @@ npm run preview      # http://127.0.0.1:4173/ethereum-doomsday/
 - One-time copy into memex `public/` (no automatic updates)
 - Broad `gokhanturhan.com/*` Worker route
 - GitHub Actions deploy (token lacks `workflow` scope; Workers Builds replaces it)
+
+## Evidence snapshot button (public, cached)
+
+The site exposes **Latest evidence snapshot (cached)** — a local UI toggle over
+`src/data/evidenceSnapshot.ts`. It does **not** call research APIs, webhooks, or
+the weekly review routine. Owner-triggered source review stays in private chat
+(Mondays ≈10:00 Europe/Istanbul). A public “Check for updates / run research”
+control would need authenticated server-side owner access plus cooldown/budget;
+that is **not** implemented on this static Pages mount.

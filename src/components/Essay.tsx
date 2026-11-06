@@ -420,8 +420,8 @@ export function Essay({ year, scenario, onScenario }: Props) {
           License terms via Fontsource.
         </p>
         <p>
-          Version 0.2.0 (2026-11-06 Europe/Istanbul): expanded tracker ported from the illustrative Cursor Page to a
-          standalone site.
+          Version 0.2.1 (2026-11-06 Europe/Istanbul): cached evidence-snapshot panel added; sources remain reference-only.
+          Prior 0.2.0 ported the tracker to this standalone site.
         </p>
       </Chapter>
     </article>
