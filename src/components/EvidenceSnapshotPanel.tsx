@@ -29,8 +29,9 @@ export function EvidenceSnapshotPanel() {
           aria-label="Cached evidence snapshot"
         >
           <p className="snapshot-kicker">
-            Static publication snapshot · v{snap.publicationVersion} · {snap.publicationDate} (
-            {snap.timezoneNote}) — not a live scrape, not “checked today”
+            Static publication snapshot · v{snap.publicationVersion} · Publication snapshot date:{" "}
+            {snap.publicationDate} ({snap.timezoneNote}) — not a live scrape, not “checked today”, no checked-at
+            claim. Until a reviewed update is published, this shows the current source list (not fresh findings).
           </p>
           <ul className="snapshot-semantics">
             {snap.semantics.map((line) => (
