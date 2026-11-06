@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Essay } from "./components/Essay";
+import { EvidenceSnapshotPanel } from "./components/EvidenceSnapshotPanel";
 import { ForecastRail } from "./components/ForecastRail";
 import {
   DEFAULT_OPTS,
@@ -9,6 +10,7 @@ import {
   clamp,
   YEAR_MIN,
   YEAR_MAX,
+  PAGE_VERSION,
 } from "./sim/model";
 import "./styles/editorial.css";
 
@@ -111,6 +113,7 @@ export default function App() {
         <p className="byline">Original risk publication</p>
         <p className="date">Web edition, November 6, 2026</p>
         <div className="disclaimer-pill">Synthetic priors · not calibrated odds</div>
+        <EvidenceSnapshotPanel />
       </header>
 
       <div className="layout">
@@ -135,8 +138,8 @@ export default function App() {
         />
       </div>
 
-      <footer className="site-foot">
-        Ethereum Doomsday Tracker · v0.2.0 ·{" "}
+            <footer className="site-foot">
+        {"Ethereum Doomsday Tracker · v" + PAGE_VERSION + " · "}
         <a href="#sources">Sources</a>
         {" · "}
         <a href="#methods">Methods</a>
