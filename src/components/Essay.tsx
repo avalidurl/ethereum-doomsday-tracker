@@ -414,16 +414,7 @@ export function Essay({ year, scenario, onScenario }: Props) {
             </tr>
           </tbody>
         </table>
-        <p>
-          Implementation: Vite + React + TypeScript; self-hosted OFL fonts (EB Garamond, Source Sans 3, Source Code Pro);
-          no network calls from the page; Squiggle not used at runtime. Fonts under their respective SIL Open Font
-          License terms via Fontsource.
-        </p>
-        <p>
-          Version 0.2.1 (2026-11-06 Europe/Istanbul): cached evidence-snapshot panel added; sources remain reference-only.
-          Prior 0.2.0 ported the tracker to this standalone site.
-        </p>
-      </Chapter>
+</Chapter>
     </article>
   );
 }
