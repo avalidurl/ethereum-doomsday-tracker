@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import type { ScenarioId } from "../sim/model";
+import { PAGE_VERSION, type ScenarioId } from "../sim/model";
 import { SOURCE_COVERAGE, sourceDisplayTitle } from "../data/evidenceSnapshot";
 
 function Pill({ title, children }: { title: string; children: ReactNode }) {
@@ -68,8 +68,7 @@ export function Essay({ year, scenario, onScenario }: Props) {
           not a calibrated probability of Ethereum doomsday. Fréchet bounds show what leaf marginals alone identify for
           the union. Epistemic bands are model-spread, not confidence intervals. RSA crowd forecasts and GRI RSA expert
           bands are not copied onto Ethereum ECDSA failure. Calibration: pending until enough pre-frozen, resolved
-          proxies exist. Deadline year Y = through end of calendar year Y. Anchor: 2026-11-06 (Europe/Istanbul). Model
-          v0.3.0.
+          proxies exist. Deadline year Y = through end of calendar year Y. Anchor: 2026-11-06 (Europe/Istanbul). Model {`v${PAGE_VERSION}`}.
         </div>
         <div className="pill-row">
           <Pill title="What this is">
@@ -211,24 +210,23 @@ export function Essay({ year, scenario, onScenario }: Props) {
             <tr>
               <th>Label</th>
               <th>Meaning</th>
-              <th>Aggregate toggle</th>
+              <th>UI / model channel</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>Theft</td>
               <td>Large unauthorized L1 redistribution</td>
-              <td>Theft</td>
+              <td>Quantum theft channel</td>
             </tr>
             <tr>
               <td>Conflict</td>
               <td>Conflicting finalized checkpoints</td>
-              <td>Conflict</td>
+              <td rowSpan={2}>Single client-failure channel (conflict ∪ outage ≥72h); taxonomy names both modes, probability uses one unidentified hazard</td>
             </tr>
             <tr>
               <td>Outage</td>
               <td>≥72h unplanned finality interruption</td>
-              <td>Outage</td>
             </tr>
             <tr>
               <td>Recoverable emergency</td>
@@ -336,10 +334,13 @@ export function Essay({ year, scenario, onScenario }: Props) {
         <p>
           TypeScript Monte Carlo (mulberry32 seed 42, N=3000). Capability and migration years are sampled from
           piecewise CDF knots (ETH ECDLP user-assumption by default; optional RSA Metaculus-proxy shape). Hazards keep
-          mild Gaussian noise. Horizon event H_Y = Theft ∪ Conflict ∪ Outage with leaf toggles; annual competing-risk
-          composition avoids double-counting on a path. Fréchet–Hoeffding bounds on enabled leaf marginals are shown
-          separately — they are identification limits, not a fitted copula. Disabled leaves are exactly zero. Prior
-          registry records source scope, date, units, and kind (empirical / elicited / assumption / unidentified).
+          mild Gaussian noise. Horizon event H_Y = Theft ∪ ClientFailure, where ClientFailure covers the taxonomy modes
+          conflict and ≥72h outage under one unidentified client hazard (grouped UI channel; not two independent Frechet
+          leaves). Layer/channel toggles gate quantum theft and the client channel; annual competing-risk composition
+          avoids double-counting on a path. Fréchet–Hoeffding bounds use mean theft/client channel marginals — identification
+          limits, not a fitted copula. Disabled channels are exactly zero. Prior registry records source scope, date,
+          units, and kind (empirical / elicited / assumption / unidentified). Headline chart trajectories are scenario
+          means E[P(H|θ)] by year (epistemic bands remain draw quantiles).
         </p>
         <p>
           Epistemic 50/80/95% bands are quantiles under parameter variation (model-spread), not frequentist CIs and not

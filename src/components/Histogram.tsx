@@ -6,7 +6,7 @@ export function Histogram({ sim }: { sim: SimResult }) {
   const n = sim.hist.counts.length;
   const barW = w / n;
   return (
-    <svg className="hist-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Model probability histogram">
+    <svg className="hist-svg" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="Model probability histogram with scenario mean marker">
       {sim.hist.counts.map((c, i) => {
         const bh = Math.max(1, c * (h - 16));
         const center = sim.hist.centers[i]!;
@@ -24,8 +24,8 @@ export function Histogram({ sim }: { sim: SimResult }) {
         );
       })}
       <line
-        x1={sim.median * w}
-        x2={sim.median * w}
+        x1={sim.scenarioMean * w}
+        x2={sim.scenarioMean * w}
         y1={2}
         y2={h - 12}
         stroke="#1a1714"

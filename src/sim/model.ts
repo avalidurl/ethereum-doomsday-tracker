@@ -1,5 +1,5 @@
 /**
- * Ethereum L1 systemic-security scenario model v0.3.2 (audit blockers addressed)
+ * Ethereum L1 systemic-security scenario model v0.3.3 (mean chart trajectories; effective Q center)
  *
  * Headline: unconditional scenario mean E[P(H_Y|θ)].
  * Fréchet: on mean channel marginals (theft, client) — same estimand family as the mean.
@@ -23,7 +23,7 @@ import {
 } from "./knots";
 import { sampleYearFromKnots } from "./knots";
 
-export const PAGE_VERSION = "0.3.2";
+export const PAGE_VERSION = "0.3.3";
 export const PAGE_UPDATED = "2026-11-06";
 export const ANCHOR_DATE = "2026-11-06";
 export const MODEL_VERSION = REGISTRY_VERSION;
@@ -81,8 +81,7 @@ export type SimResult = {
   years: number[];
   selectedYear: number;
   /**
-   * Unconditional scenario mean E[P(H_Y|θ)] — headline estimand.
-   * (Field name `median` retained for UI wiring; prefer `scenarioMean` / readout labels.)
+   * @deprecated Alias of scenarioMean — do not treat as a median. Prefer scenarioMean.
    */
   median: number;
   scenarioMean: number;
@@ -100,12 +99,15 @@ export type SimResult = {
   p90: number;
   p975: number;
   cumLow: number[];
+  cumMean: number[];
   cumMed: number[];
   cumHigh: number[];
   annLow: number[];
+  annMean: number[];
   annMed: number[];
   annHigh: number[];
   survLow: number[];
+  survMean: number[];
   survMed: number[];
   survHigh: number[];
   hist: { centers: number[]; counts: number[] };
@@ -178,6 +180,22 @@ export function spreadBounds(spread: SpreadId): [number, number] {
 
 export function metaculusRsaMedianYear(): number {
   return yearAtCdf(METACULUS_RSA_KNOTS, 0.5);
+}
+
+/** Cited Metaculus 30596 community-center snapshot used as RSA-proxy source (not a live scrape). */
+export const METACULUS_RSA_SOURCE_CENTER = metaculusRsaMedianYear();
+
+/**
+ * Effective Q timeline center under current opts.
+ * rsa_proxy + !qMuOverride → source Metaculus center; otherwise opts.qMu (user/eth).
+ */
+export function effectiveQCenter(
+  opts: Pick<SimOpts, "timelineMode" | "qMu" | "qMuOverride" | "qWidth" | "scenario">,
+): number {
+  if (opts.timelineMode === "rsa_proxy" && !opts.qMuOverride) {
+    return METACULUS_RSA_SOURCE_CENTER;
+  }
+  return opts.qMu;
 }
 
 export function clientChannelOn(opts: Pick<SimOpts, "clientOn" | "conflict" | "outage">): boolean {
@@ -327,16 +345,25 @@ export function runSim(opts: SimOpts): SimResult {
   const sorted = [...probs].sort((a, b) => a - b);
 
   const cumLow: number[] = [];
+  const cumMean: number[] = [];
   const cumMed: number[] = [];
   const cumHigh: number[] = [];
   const annLow: number[] = [];
+  const annMean: number[] = [];
   const annMed: number[] = [];
   const annHigh: number[] = [];
   const survLow: number[] = [];
+  const survMean: number[] = [];
   const survMed: number[] = [];
   const survHigh: number[] = [];
 
   for (let yi = 0; yi < years.length; yi++) {
+    const cumCol = cumTraj.map((tr) => tr[yi]!);
+    const annCol = annTraj.map((tr) => tr[yi]!);
+    const survCol = survTraj.map((tr) => tr[yi]!);
+    cumMean.push(mean(cumCol));
+    annMean.push(mean(annCol));
+    survMean.push(mean(survCol));
     cumLow.push(colQuantile(cumTraj, yi, loP));
     cumMed.push(colQuantile(cumTraj, yi, 0.5));
     cumHigh.push(colQuantile(cumTraj, yi, hiP));
@@ -359,9 +386,10 @@ export function runSim(opts: SimOpts): SimResult {
   const norm = counts.map((c) => c / maxC);
 
   const baseMean = scenarioMean;
+  const qCenter = effectiveQCenter(opts);
   const perturbs: { label: string; patch: Partial<Omit<SimOpts, "spread">> }[] = [
-    { label: "Q center −3y", patch: { qMu: opts.qMu - 3, qMuOverride: true } },
-    { label: "Q center +3y", patch: { qMu: opts.qMu + 3, qMuOverride: true } },
+    { label: "Q center −3y", patch: { qMu: qCenter - 3, qMuOverride: true } },
+    { label: "Q center +3y", patch: { qMu: qCenter + 3, qMuOverride: true } },
     { label: "M center −2y", patch: { mMu: opts.mMu - 2 } },
     { label: "M center +2y", patch: { mMu: opts.mMu + 2 } },
     { label: "Exploit +3pp", patch: { exploitH: opts.exploitH + 0.03 } },
@@ -400,12 +428,15 @@ export function runSim(opts: SimOpts): SimResult {
     p90: quantile(sorted, 0.9),
     p975: quantile(sorted, 0.975),
     cumLow,
+    cumMean,
     cumMed,
     cumHigh,
     annLow,
+    annMean,
     annMed,
     annHigh,
     survLow,
+    survMean,
     survMed,
     survHigh,
     hist: { centers, counts: norm },
