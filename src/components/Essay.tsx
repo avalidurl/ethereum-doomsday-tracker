@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { ScenarioId } from "../sim/model";
+import { SOURCE_COVERAGE, sourceDisplayTitle } from "../data/evidenceSnapshot";
 
 function Pill({ title, children }: { title: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -252,8 +253,8 @@ export function Essay({ year, scenario, onScenario }: Props) {
           OpenAI + Paradigm introduced EVMbench (public post 18 February 2026) with three modes — Detect, Patch, Exploit
           — and different denominators. Published metadata: 117 curated vulnerabilities from 40 audits; Rust harness;
           historical vulns; isolated Anvil (not live networks). Blog-reported exploit-mode example: GPT‑5.3‑Codex via
-          Codex CLI 71.0% vs GPT‑5 33.3%. Detect/patch remain below full coverage. Status here: reference only / not
-          ingested / not executed.
+          Codex CLI 71.0% vs GPT‑5 33.3%. Detect/patch remain below full coverage. Content reviewed offline for this
+          publication; the EVMbench harness is not run on this site.
         </p>
         <table className="data">
           <thead>
@@ -291,16 +292,16 @@ export function Essay({ year, scenario, onScenario }: Props) {
         <p>
           Anthropic’s smart-contract / SCONE line emphasizes agent success with simulated economic loss. Borrowed
           concepts without inventing a scoreboard: success rate; held-out / post-cutoff vs retrospective evaluation;
-          outlier sensitivity; simulated losses ≠ observed real-world losses. Status: reference only / not ingested / no
-          run claimed.
+          outlier sensitivity; simulated losses ≠ observed real-world losses. Content reviewed offline; SCONE is not run
+          on this site.
         </p>
       </Chapter>
 
       <Chapter id="hive" roman="VII" title="Hive client health">
         <p>
           Hive-style matrices cross clients with test families: pass / fail / unsupported / unknown. Useful for
-          monitoring diversity — not drawn here as a fake live matrix. Model health ≠ model risk. A production tracker
-          could ingest immutable Hive snapshots as covariates for the client hazard prior — still not a score-to-odds map.
+          monitoring diversity. Offline review covered the public listing aggregate (partial); this page does not live-fetch
+          Hive. Client health ≠ calibrated L1 outage odds.
         </p>
       </Chapter>
 
@@ -358,72 +359,33 @@ export function Essay({ year, scenario, onScenario }: Props) {
         </p>
       </Chapter>
 
-      <Chapter id="sources" roman="XI" title="Sources, implementation, version">
+      <Chapter id="sources" roman="XI" title="Sources">
+        <p>
+          Same coverage labels as the cached evidence snapshot. Evidence was reviewed offline before publish; opening
+          this page does not fetch sources. Benchmark harnesses are not executed here. Model assumptions are tracked
+          separately in the prior registry.
+        </p>
         <table className="data">
           <thead>
             <tr>
               <th>Source</th>
-              <th>Status</th>
+              <th>Coverage</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>
-                <a href="https://openai.com/index/introducing-evmbench/">OpenAI EVMbench (2026-02-18)</a>
-              </td>
-              <td>reference / not ingested</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://www.anthropic.com/research/smart-contracts">Anthropic smart contracts / SCONE</a>
-              </td>
-              <td>reference / not ingested</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://hive.ethpandaops.io/">Ethereum Hive</a>
-              </td>
-              <td>reference / not fetched</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://research.google/blog/safeguarding-cryptocurrency-by-disclosing-quantum-vulnerabilities-responsibly/">
-                  Google Quantum AI ECDLP note
-                </a>
-              </td>
-              <td>reference / not ingested</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://ethereum.org/roadmap/security/quantum-resistance/">ethereum.org PQ roadmap</a>
-              </td>
-              <td>reference / not ingested</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://globalriskinstitute.org/publication/quantum-threat-timeline-report-2025b/">
-                  GRI Quantum Threat Timeline 2025
-                </a>
-              </td>
-              <td>reference / not ingested</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://quantum.causisresearch.com/">Causis CRQC</a>
-              </td>
-              <td>reference / not executed</td>
-            </tr>
-            <tr>
-              <td>
-                <a href="https://www.metaculus.com/questions/30596/date-of-rsa-2048-quantum-factorization/">
-                  Metaculus RSA-2048 QC date
-                </a>
-              </td>
-              <td>reference / not ingested</td>
-            </tr>
+            {SOURCE_COVERAGE.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  <a href={s.url} rel="noopener noreferrer">
+                    {sourceDisplayTitle(s)}
+                  </a>
+                </td>
+                <td>{s.statusLabel}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
-</Chapter>
+      </Chapter>
     </article>
   );
 }
