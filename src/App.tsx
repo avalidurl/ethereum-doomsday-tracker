@@ -12,10 +12,9 @@ import {
 } from "./sim/model";
 import "./styles/editorial.css";
 
-function parseHash(): Partial<SimOpts> & { chart?: ChartId; band?: boolean } {
-  const h = window.location.hash.replace(/^#/, "");
-  if (!h) return {};
-  const sp = new URLSearchParams(h);
+/** Forecast state lives in ?query so #anchors (Sources/Methods/…) keep working. */
+function parseQuery(): Partial<SimOpts> & { chart?: ChartId; band?: boolean } {
+  const sp = new URLSearchParams(window.location.search);
   const out: Partial<SimOpts> & { chart?: ChartId; band?: boolean } = {};
   const num = (k: string) => {
     const v = sp.get(k);
@@ -47,7 +46,7 @@ function parseHash(): Partial<SimOpts> & { chart?: ChartId; band?: boolean } {
   return out;
 }
 
-function writeHash(opts: SimOpts, chart: ChartId, showBand: boolean) {
+function writeQuery(opts: SimOpts, chart: ChartId, showBand: boolean) {
   const sp = new URLSearchParams();
   sp.set("y", String(opts.selectedYear));
   sp.set("sc", opts.scenario);
@@ -64,13 +63,15 @@ function writeHash(opts: SimOpts, chart: ChartId, showBand: boolean) {
   sp.set("q", opts.quantumOn ? "1" : "0");
   sp.set("c", opts.clientOn ? "1" : "0");
   const next = sp.toString();
-  if (window.location.hash.replace(/^#/, "") !== next) {
-    history.replaceState(null, "", `#${next}`);
+  const cur = window.location.search.replace(/^\?/, "");
+  if (cur !== next) {
+    const url = `${window.location.pathname}?${next}${window.location.hash}`;
+    history.replaceState(null, "", url);
   }
 }
 
 export default function App() {
-  const initial = parseHash();
+  const initial = parseQuery();
   const [opts, setOpts] = useState<SimOpts>({ ...DEFAULT_OPTS, ...initial });
   const [chart, setChart] = useState<ChartId>(initial.chart ?? "cumulative");
   const [showBand, setShowBand] = useState(initial.band ?? true);
@@ -78,7 +79,7 @@ export default function App() {
   const sim = useMemo(() => runSim(opts), [opts]);
 
   useEffect(() => {
-    writeHash(opts, chart, showBand);
+    writeQuery(opts, chart, showBand);
   }, [opts, chart, showBand]);
 
   function patch(p: Partial<SimOpts>) {

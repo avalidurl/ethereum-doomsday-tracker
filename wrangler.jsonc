@@ -1,0 +1,41 @@
+/**
+ * Workers Static Assets + path prefix for gokhanturhan.com/ethereum-doomsday
+ *
+ * Docs:
+ * - https://developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/
+ * - assets.base_path requires Wrangler >= 4.148.0 (this repo pins wrangler ^4.158)
+ *
+ * PREPARED ONLY — do not wrangler deploy until Cloudflare connector/auth is ready.
+ * Workers Builds (GitHub) should: build `npm run build`, deploy `npx wrangler deploy`.
+ * Dashboard Worker name MUST match `name` below.
+ */
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ethereum-doomsday-tracker",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-06",
+  "workers_dev": true,
+  "preview_urls": true,
+  "upload_source_maps": true,
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  // Zone routes attach ONLY the ethereum-doomsday prefix (existing Pages site untouched).
+  // Confirm zone_name in dashboard if attach fails; do not broaden to /* .
+  "routes": [
+    { "pattern": "gokhanturhan.com/ethereum-doomsday", "zone_name": "gokhanturhan.com" },
+    { "pattern": "gokhanturhan.com/ethereum-doomsday/*", "zone_name": "gokhanturhan.com" }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "base_path": "/ethereum-doomsday",
+    // Vite already emits /ethereum-doomsday/... asset URLs (vite base).
+    "html_handling": "force-trailing-slash",
+    // Hash-routed app: do NOT swallow unknown paths as index.html
+    "not_found_handling": "none",
+    // Run Worker first for bare-prefix redirect + out-of-scope guard
+    "run_worker_first": true
+  }
+}

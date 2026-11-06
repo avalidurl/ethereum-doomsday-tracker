@@ -46,3 +46,11 @@ Cloudflare connector auth may be required for project binding changes; this repo
 ## License
 
 Content and code: all rights reserved by the publisher unless otherwise noted. Fonts: SIL Open Font License via Fontsource.
+
+
+## Deployment (prepared)
+
+See [DEPLOY.md](./DEPLOY.md). Repo includes `wrangler.jsonc` + `worker/index.ts` for
+Cloudflare Workers Static Assets under `gokhanturhan.com/ethereum-doomsday/` with
+`assets.base_path`. **Not deployed yet** — Cloudflare auth pending. Use Workers Builds
+(GitHub) once authorized; do not broaden zone routes beyond the prefix.
