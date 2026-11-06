@@ -14,7 +14,7 @@ describe("EVIDENCE_SNAPSHOT checked-in record", () => {
     expect(EVIDENCE_SNAPSHOT.sources.length).toBeGreaterThanOrEqual(8);
     for (const s of EVIDENCE_SNAPSHOT.sources) {
       expect(s.url.startsWith("https://")).toBe(true);
-      expect(s.status.startsWith("reference")).toBe(true);
+      expect(s.status.startsWith("reference") || s.status.includes("dossier")).toBe(true);
       expect(Object.keys(s)).not.toContain("scrapedAt");
       expect(Object.keys(s)).not.toContain("checkedAt");
     }

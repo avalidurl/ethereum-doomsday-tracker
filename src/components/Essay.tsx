@@ -63,9 +63,12 @@ export function Essay({ year, scenario, onScenario }: Props) {
           here.
         </p>
         <div className="callout">
-          Every probability is generated from a seeded toy model with adjustable assumptions. Bands are MODEL-SPREAD
-          INTERVALS (prior-driven parameter quantiles), not confidence intervals and not posterior credible intervals.
-          Deadline year Y means through end of calendar year Y. Anchor: 2026-11-06 (Europe/Istanbul).
+          Headline “Scenario Yes” is a competing-risk composition under stated assumptions — useful for stress-testing,
+          not a calibrated probability of Ethereum doomsday. Fréchet bounds show what leaf marginals alone identify for
+          the union. Epistemic bands are model-spread, not confidence intervals. RSA crowd forecasts and GRI RSA expert
+          bands are not copied onto Ethereum ECDSA failure. Calibration: pending until enough pre-frozen, resolved
+          proxies exist. Deadline year Y = through end of calendar year Y. Anchor: 2026-11-06 (Europe/Istanbul). Model
+          v0.3.0.
         </div>
         <div className="pill-row">
           <Pill title="What this is">
@@ -73,8 +76,8 @@ export function Essay({ year, scenario, onScenario }: Props) {
             not for trading or calibrated doom odds.
           </Pill>
           <Pill title="What this is not">
-            Not a live market; not ingested Causis/GRI/Metaculus numbers; not executed EVMbench/SCONE/Hive runs; not
-            calibrated doom odds.
+            Not a live market; not a claim that GRI/Metaculus RSA numbers equal Ethereum L1 failure odds; not executed
+            EVMbench/SCONE exploit runs as L1 mass; not empirically calibrated doom odds (calibration pending).
           </Pill>
           <Pill title="Title caveat">
             “Doomsday” is editorial shorthand. Resolution criteria carefully distinguish temporary outage from permanent
@@ -317,11 +320,12 @@ export function Essay({ year, scenario, onScenario }: Props) {
       <Chapter id="provenance" roman="IX" title="Elicitation and market provenance">
         <p>
           GRI-style expert elicitations, Metaculus-style crowd distributions, and Causis-style causal models that may
-          anchor on both are not independent votes when someone later averages “all sources.” This site treats GRI,
-          Metaculus, Causis, and benchmarks as references with ingested=false.
+          anchor on both are not independent votes when someone later averages “all sources.” v0.3 links them through a
+          prior registry (elicited vs assumption vs unidentified) without stacking them as independent doom votes or
+          porting RSA percentages onto Ethereum L1 failure.
         </p>
         <ul className="subs">
-          <li>Source independence / dependence graph</li>
+          <li>Fréchet union bounds + named dependence scenarios (not fitted ρ)</li>
           <li>Liquidity vs crowd size vs resolution precision</li>
           <li>Immutable snapshots before any future ingestion</li>
         </ul>
@@ -329,18 +333,23 @@ export function Essay({ year, scenario, onScenario }: Props) {
 
       <Chapter id="methods" roman="X" title="Methods and evaluation plan">
         <p>
-          TypeScript Monte Carlo (mulberry32 seed 42, N=3000, Box–Muller). For each draw: Q~Normal, M~Normal, residual
-          noise, client lognormal hazard, quantum peak after Q while exposed. Annual competing-risk OR; unconditional
-          first-event mass π_y = S<sub>y−1</sub>·h_y; cumulative F_y = 1−S_y. Disabled hazards are exactly zero.
+          TypeScript Monte Carlo (mulberry32 seed 42, N=3000). Capability and migration years are sampled from
+          piecewise CDF knots (ETH ECDLP user-assumption by default; optional RSA Metaculus-proxy shape). Hazards keep
+          mild Gaussian noise. Horizon event H_Y = Theft ∪ Conflict ∪ Outage with leaf toggles; annual competing-risk
+          composition avoids double-counting on a path. Fréchet–Hoeffding bounds on enabled leaf marginals are shown
+          separately — they are identification limits, not a fitted copula. Disabled leaves are exactly zero. Prior
+          registry records source scope, date, units, and kind (empirical / elicited / assumption / unidentified).
         </p>
         <p>
-          Displayed 50/80/95% bands are quantiles of model-derived probabilities under prior parameter variation — not
-          frequentist CIs, not bootstrap CIs on observations, not Bayesian posteriors after likelihood updating. Source
-          calibration has not been done.
+          Epistemic 50/80/95% bands are quantiles under parameter variation (model-spread), not frequentist CIs and not
+          posteriors after likelihood updating. Calibration status is pending until a defensible set of pre-frozen,
+          resolved proxies exists; changing scenario odds is not calibration. GRI RSA expert percentages are not ported
+          into Ethereum L1 probabilities.
         </p>
         <p>
-          <strong>Weaknesses:</strong> conditional independence ignores common causes; Normal year priors are coarse;
-          outcome aggregation is a demo convenience; no elicited expert priors; no proper scoring yet. Therefore this
+          <strong>Remaining limits:</strong> leaf hazards (exploit rate, residual exposure, client rate) remain
+          unidentified from public data; dependence between quantum and migration is only stressed via named scenarios;
+          Hive pass/fail counts are not a calibrated outage rate. Therefore this
           must not be read as a real overall doom forecast.
         </p>
         <p>
