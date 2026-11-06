@@ -1,5 +1,5 @@
 /** Toy L1 competing-risk Monte Carlo — illustrative priors only. v0.2 */
-export const PAGE_VERSION = "0.2.1";
+export const PAGE_VERSION = "0.2.2";
 export const PAGE_UPDATED = "2026-11-06";
 export const ANCHOR_DATE = "2026-11-06";
 export const NOW = 2026;
