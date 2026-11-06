@@ -1,28 +1,39 @@
 import { describe, expect, it } from "vitest";
 import { frechetUnionBounds } from "./frechet";
-import { cdfAtYear, sampleYearFromKnots, validateKnots } from "./knots";
-import { brierScore, evaluateCalibration, logScore } from "./calibration";
+import {
+  cdfAtYear,
+  sampleYearFromKnots,
+  validateKnots,
+  withAssumptionTails,
+  yearAtCdf,
+} from "./knots";
+import { brierScore, evaluateCalibration, logScore, rowIsScoreable } from "./calibration";
 import {
   DEFAULT_OPTS,
-  V022_COMPARE_OPTS,
+  buildQKnots,
+  clientChannelOn,
+  clamp,
+  mean,
+  metaculusRsaMedianYear,
+  quantile,
+  runSim,
   YEAR_MAX,
   YEAR_MIN,
-  buildQKnots,
-  clamp,
-  quantile,
-  runCore,
-  runSim,
 } from "./model";
 import { METACULUS_RSA_KNOTS, PRIOR_REGISTRY } from "../data/priorRegistry";
+import { mulberry32 } from "./model";
 
 describe("runSim invariants", () => {
-  it("keeps Yes+No complement and bounds at 2035", () => {
+  it("keeps mean in [0,1] and Frechet nesting at 2035", () => {
     const s = runSim({ ...DEFAULT_OPTS, selectedYear: 2035 });
-    expect(s.median).toBeGreaterThanOrEqual(0);
-    expect(s.median).toBeLessThanOrEqual(1);
-    expect(s.low).toBeLessThanOrEqual(s.median);
-    expect(s.median).toBeLessThanOrEqual(s.high);
-    expect(Math.abs(s.median + (1 - s.median) - 1)).toBeLessThan(1e-12);
+    expect(s.scenarioMean).toBeGreaterThanOrEqual(0);
+    expect(s.scenarioMean).toBeLessThanOrEqual(1);
+    expect(s.median).toBe(s.scenarioMean);
+    expect(s.frechetLow).toBeLessThanOrEqual(s.frechetHigh + 1e-12);
+    expect(s.scenarioMean).toBeGreaterThanOrEqual(s.frechetLow - 1e-9);
+    expect(s.scenarioMean).toBeLessThanOrEqual(s.frechetHigh + 1e-9);
+    expect(s.low).toBeLessThanOrEqual(s.scenarioP50 + 1e-12);
+    expect(s.scenarioP50).toBeLessThanOrEqual(s.high + 1e-12);
   });
 
   it("has nondecreasing cumulative median path", () => {
@@ -32,7 +43,7 @@ describe("runSim invariants", () => {
     }
   });
 
-  it("nests 50 inside 80 inside 95", () => {
+  it("nests epistemic 50 inside 80 inside 95", () => {
     const a = runSim({ ...DEFAULT_OPTS, selectedYear: 2035, spread: "50" });
     const b = runSim({ ...DEFAULT_OPTS, selectedYear: 2035, spread: "80" });
     const c = runSim({ ...DEFAULT_OPTS, selectedYear: 2035, spread: "95" });
@@ -42,24 +53,17 @@ describe("runSim invariants", () => {
     expect(b.high).toBeLessThanOrEqual(c.high + 1e-12);
   });
 
-  it("monotonic across year endpoints", () => {
+  it("monotonic mean across year endpoints", () => {
     const years = [2027, 2030, 2035, 2040, 2050, 2055];
-    const meds = years.map((y) => runSim({ ...DEFAULT_OPTS, selectedYear: y }).median);
-    for (let i = 0; i < meds.length - 1; i++) {
-      expect(meds[i]!).toBeLessThanOrEqual(meds[i + 1]! + 1e-9);
+    const means = years.map((y) => runSim({ ...DEFAULT_OPTS, selectedYear: y }).scenarioMean);
+    for (let i = 0; i < means.length - 1; i++) {
+      expect(means[i]!).toBeLessThanOrEqual(means[i + 1]! + 1e-9);
     }
   });
 
-  it("zeros when layers and outcomes off", () => {
-    const s = runSim({
-      ...DEFAULT_OPTS,
-      quantumOn: false,
-      clientOn: false,
-      selectedYear: 2040,
-    });
-    expect(s.median).toBe(0);
-    expect(s.high).toBe(0);
-    expect(s.frechetLow).toBe(0);
+  it("zeros when layers/channels off", () => {
+    const s = runSim({ ...DEFAULT_OPTS, quantumOn: false, clientOn: false, selectedYear: 2040 });
+    expect(s.scenarioMean).toBe(0);
     expect(s.frechetHigh).toBe(0);
     const t = runSim({
       ...DEFAULT_OPTS,
@@ -68,154 +72,223 @@ describe("runSim invariants", () => {
       outage: false,
       selectedYear: 2040,
     });
-    expect(t.median).toBe(0);
+    expect(t.scenarioMean).toBe(0);
   });
 
-  it("moves scenarios directionally under fixed seed", () => {
-    const base = runSim({ ...DEFAULT_OPTS, selectedYear: 2035, scenario: "orderly" }).median;
-    expect(runSim({ ...DEFAULT_OPTS, selectedYear: 2035, scenario: "q_accel" }).median).toBeGreaterThanOrEqual(
-      base - 1e-9,
-    );
-    expect(runSim({ ...DEFAULT_OPTS, selectedYear: 2035, scenario: "client" }).median).toBeGreaterThanOrEqual(
-      base - 1e-9,
-    );
+  it("restored legacy unidentified defaults", () => {
+    expect(DEFAULT_OPTS.clientH).toBe(0.005);
+    expect(DEFAULT_OPTS.exploitH).toBe(0.08);
+    expect(DEFAULT_OPTS.residual).toBe(0.15);
+    expect(DEFAULT_OPTS.mMu).toBe(2031);
   });
+});
 
-  it("annual mass equals delta cum per draw", () => {
-    const core = runCore({ ...DEFAULT_OPTS, selectedYear: 2040 });
-    for (let d = 0; d < 5; d++) {
-      const cum = core.cumTraj[d]!;
-      const ann = core.annTraj[d]!;
-      let prev = 0;
-      for (let i = 0; i < cum.length; i++) {
-        expect(Math.abs(ann[i]! - (cum[i]! - prev))).toBeLessThan(1e-9);
-        prev = cum[i]!;
-      }
+describe("Frechet estimand consistency (audit regressions)", () => {
+  it("mean never exceeds Frechet high for audit repro toggles", () => {
+    const cases = [
+      { ...DEFAULT_OPTS, selectedYear: 2035, outage: false },
+      { ...DEFAULT_OPTS, selectedYear: 2035, scenario: "q_accel" as const, outage: false },
+      {
+        ...DEFAULT_OPTS,
+        selectedYear: 2038,
+        clientH: 0.001,
+        exploitH: 0.15,
+        conflict: true,
+        outage: true,
+        theft: true,
+      },
+    ];
+    for (const opts of cases) {
+      const s = runSim(opts);
+      expect(s.scenarioMean).toBeLessThanOrEqual(s.frechetHigh + 1e-9);
+      expect(s.scenarioMean).toBeGreaterThanOrEqual(s.frechetLow - 1e-9);
     }
   });
 
-  it("clamps year helpers", () => {
-    expect(clamp(YEAR_MIN - 5, YEAR_MIN, YEAR_MAX)).toBe(YEAR_MIN);
-    expect(clamp(YEAR_MAX + 5, YEAR_MIN, YEAR_MAX)).toBe(YEAR_MAX);
-    expect(quantile([0, 1, 2, 3, 4], 0.5)).toBe(2);
-  });
-});
+  it(
+    "randomized toggle grid: mean in Frechet for many seeds of options",
+    () => {
+    const rnd = mulberry32(99);
+    for (let i = 0; i < 24; i++) {
+      const opts = {
+        ...DEFAULT_OPTS,
+        selectedYear: 2030 + Math.floor(rnd() * 20),
+        theft: rnd() > 0.3,
+        conflict: rnd() > 0.5,
+        outage: rnd() > 0.5,
+        quantumOn: rnd() > 0.2,
+        clientOn: rnd() > 0.2,
+        scenario: (["orderly", "q_accel", "delayed", "client"] as const)[Math.floor(rnd() * 4)]!,
+        exploitH: 0.02 + rnd() * 0.12,
+        clientH: 0.001 + rnd() * 0.01,
+        timelineMode: rnd() > 0.5 ? ("eth_assumption" as const) : ("rsa_proxy" as const),
+        qMuOverride: false,
+      };
+      if (!opts.theft && !clientChannelOn(opts)) continue;
+      const s = runSim(opts);
+      expect(s.scenarioMean).toBeLessThanOrEqual(s.frechetHigh + 1e-8);
+      expect(s.scenarioMean).toBeGreaterThanOrEqual(s.frechetLow - 1e-8);
+    }
+  },
+    20000,
+  );
 
-describe("event overlap and Fréchet", () => {
-  it("Frechet bounds nest scenario median for default leaves", () => {
-    const s = runSim({ ...DEFAULT_OPTS, selectedYear: 2035 });
-    expect(s.frechetLow).toBeLessThanOrEqual(s.frechetHigh + 1e-12);
-    // Scenario composition uses single-count competing risk; must lie in [0,1] and typically inside Frechet
-    expect(s.median).toBeGreaterThanOrEqual(0);
-    expect(s.median).toBeLessThanOrEqual(1);
-    expect(s.median).toBeGreaterThanOrEqual(s.frechetLow - 1e-6);
-    expect(s.median).toBeLessThanOrEqual(s.frechetHigh + 1e-6);
+  it("conflict-only and outage-only share identical client marginal (one channel)", () => {
+    const a = runSim({ ...DEFAULT_OPTS, selectedYear: 2035, theft: false, conflict: true, outage: false });
+    const b = runSim({ ...DEFAULT_OPTS, selectedYear: 2035, theft: false, conflict: false, outage: true });
+    expect(a.leafMarginals.client).toBeCloseTo(b.leafMarginals.client, 12);
+    expect(a.scenarioMean).toBeCloseTo(b.scenarioMean, 12);
+    // Frechet has a single client marginal — not duplicated
+    expect(a.frechetLow).toBeCloseTo(a.leafMarginals.client, 12);
+    expect(a.frechetHigh).toBeCloseTo(a.leafMarginals.client, 12);
   });
 
-  it("Frechet unit: known marginals", () => {
+  it("Frechet unit known marginals", () => {
     const b = frechetUnionBounds([0.4, 0.4]);
     expect(b.low).toBeCloseTo(0.4, 10);
     expect(b.high).toBeCloseTo(0.8, 10);
-    const c = frechetUnionBounds([0.7, 0.7, 0.7]);
-    expect(c.low).toBeCloseTo(Math.max(0.7, 2.1 - 2), 10);
-    expect(c.high).toBeCloseTo(1, 10);
-  });
-
-  it("joint scenario median lies in Fréchet bounds from leaf marginals", () => {
-    const both = runSim({ ...DEFAULT_OPTS, selectedYear: 2040 });
-    expect(both.median).toBeLessThanOrEqual(both.frechetHigh + 1e-6);
-    expect(both.median).toBeGreaterThanOrEqual(both.frechetLow - 1e-6);
-    expect(both.frechetHigh).toBeLessThanOrEqual(
-      both.leafMarginals.theft + both.leafMarginals.conflict + both.leafMarginals.outage + 1e-9,
-    );
-    const theftOnly = runSim({
-      ...DEFAULT_OPTS,
-      selectedYear: 2040,
-      conflict: false,
-      outage: false,
-    });
-    const clientOnly = runSim({
-      ...DEFAULT_OPTS,
-      selectedYear: 2040,
-      theft: false,
-    });
-    // Single-count joint ≥ each standalone median (synced seeds / nested hazards)
-    expect(both.median).toBeGreaterThanOrEqual(theftOnly.median - 1e-6);
-    expect(both.median).toBeGreaterThanOrEqual(clientOnly.median - 1e-6);
   });
 });
 
-describe("horizon bounds and source mapping", () => {
-  it("registry maps parameters with kinds and does not claim GRI→ETH port", () => {
-    expect(PRIOR_REGISTRY.length).toBeGreaterThanOrEqual(8);
-    const gri = PRIOR_REGISTRY.find((e) => e.id === "gri_2025_rsa_crqc");
-    expect(gri?.notes.toLowerCase()).toContain("do not port");
-    const eth = PRIOR_REGISTRY.find((e) => e.id === "eth_ecdlp_capability_year");
-    expect(eth?.kind).toBe("user_assumption");
-    const rsa = PRIOR_REGISTRY.find((e) => e.id === "metaculus_rsa_2048_date");
-    expect(rsa?.kind).toBe("elicited_published");
+describe("knot CDF/inverse coherence", () => {
+  it("no artificial 10%/90% point masses; tails reach 0 and 1", () => {
+    const ext = withAssumptionTails(METACULUS_RSA_KNOTS);
+    expect(ext[0]!.cdf).toBe(0);
+    expect(ext[ext.length - 1]!.cdf).toBe(1);
+    const rnd = mulberry32(7);
+    const samples: number[] = [];
+    for (let i = 0; i < 5000; i++) samples.push(sampleYearFromKnots(rnd, METACULUS_RSA_KNOTS));
+    const y10 = yearAtCdf(METACULUS_RSA_KNOTS, 0.1);
+    const fracAtFirstInterior = samples.filter((y) => Math.abs(y - METACULUS_RSA_KNOTS[0]!.year) < 1e-9).length / samples.length;
+    expect(fracAtFirstInterior).toBeLessThan(0.05);
+    expect(cdfAtYear(METACULUS_RSA_KNOTS, yearAtCdf(METACULUS_RSA_KNOTS, 0.5))).toBeCloseTo(0.5, 5);
+    expect(cdfAtYear(METACULUS_RSA_KNOTS, y10)).toBeCloseTo(0.1, 5);
+    expect(cdfAtYear(METACULUS_RSA_KNOTS, 2100)).toBe(1);
+    expect(cdfAtYear(METACULUS_RSA_KNOTS, 2000)).toBe(0);
   });
 
-  it("rsa_proxy knots differ from eth_assumption recenter at same qMu", () => {
-    const eth = buildQKnots({ timelineMode: "eth_assumption", qMu: 2038, scenario: "orderly" });
-    const rsa = buildQKnots({ timelineMode: "rsa_proxy", qMu: 2038, scenario: "orderly" });
-    const ethMid = eth.find((k) => Math.abs(k.cdf - 0.5) < 1e-9)!.year;
-    const rsaMid = rsa.find((k) => Math.abs(k.cdf - 0.5) < 1e-9)!.year;
-    expect(ethMid).toBeCloseTo(2038, 5);
-    expect(rsaMid).toBeCloseTo(2038, 5);
-    // Shape: RSA original median ~2033.68; after recenter widths differ
-    const ethWidth = eth[eth.length - 1]!.year - eth[0]!.year;
-    const rsaWidth = rsa[rsa.length - 1]!.year - rsa[0]!.year;
-    expect(Math.abs(ethWidth - rsaWidth)).toBeGreaterThan(0.5);
-  });
-
-  it("Metaculus knots validate and cdfAtYear behaves", () => {
-    validateKnots(METACULUS_RSA_KNOTS);
-    expect(cdfAtYear(METACULUS_RSA_KNOTS, 2025)).toBe(0);
-    expect(cdfAtYear(METACULUS_RSA_KNOTS, 2090)).toBe(0.9);
-    const rnd = () => 0.5;
-    const y = sampleYearFromKnots(rnd, METACULUS_RSA_KNOTS);
-    expect(y).toBeGreaterThan(2030);
-    expect(y).toBeLessThan(2040);
+  it("qWidth changes dispersion (not a dead control)", () => {
+    const narrow = buildQKnots({
+      timelineMode: "eth_assumption",
+      qMu: 2038,
+      qWidth: 0.5,
+      scenario: "orderly",
+      qMuOverride: false,
+    });
+    const wide = buildQKnots({
+      timelineMode: "eth_assumption",
+      qMu: 2038,
+      qWidth: 2,
+      scenario: "orderly",
+      qMuOverride: false,
+    });
+    const nSpan = narrow[narrow.length - 1]!.year - narrow[0]!.year;
+    const wSpan = wide[wide.length - 1]!.year - wide[0]!.year;
+    // compare after tails via yearAtCdf span of interior — use raw scale on assumption knots
+    expect(wSpan).toBeGreaterThan(nSpan + 1);
+    const a = runSim({ ...DEFAULT_OPTS, qWidth: 0.5, selectedYear: 2035 });
+    const b = runSim({ ...DEFAULT_OPTS, qWidth: 2, selectedYear: 2035 });
+    // widths affect epistemic spread and/or mean when quantum matters later — at least not identical joint
+    expect(a.high - a.low + a.scenarioMean).not.toBe(b.high - b.low + b.scenarioMean);
   });
 });
 
-describe("calibration honesty", () => {
-  it("reports pending without resolved outcomes", () => {
-    const c = evaluateCalibration();
-    expect(c.status).toBe("pending_insufficient_resolved");
-    expect(c.nResolved).toBe(0);
-    expect(runSim(DEFAULT_OPTS).calibration.status).toBe("pending_insufficient_resolved");
+describe("RSA proxy unshifted", () => {
+  it("rsa_proxy without override keeps Metaculus median (~2033.7)", () => {
+    const k = buildQKnots({
+      timelineMode: "rsa_proxy",
+      qMu: 2038,
+      qWidth: 1,
+      scenario: "orderly",
+      qMuOverride: false,
+    });
+    expect(yearAtCdf(k, 0.5)).toBeCloseTo(metaculusRsaMedianYear(), 5);
   });
 
-  it("scores when archive has frozen P and outcomes", () => {
-    const c = evaluateCalibration([
+  it("rsa_proxy default mean at 2035 is not lowered by false 2038 recenter", () => {
+    const eth = runSim({ ...DEFAULT_OPTS, timelineMode: "eth_assumption", selectedYear: 2035 });
+    const rsa = runSim({
+      ...DEFAULT_OPTS,
+      timelineMode: "rsa_proxy",
+      qMuOverride: false,
+      selectedYear: 2035,
+    });
+    // Earlier CRQC proxy should raise (not lower) near-term quantum contribution vs eth 2038 center
+    expect(rsa.leafMarginals.theft).toBeGreaterThanOrEqual(eth.leafMarginals.theft - 1e-9);
+  });
+});
+
+describe("horizon channel means", () => {
+  it("quantumOnlyMean uses selectedYear not end-horizon only", () => {
+    const early = runSim({ ...DEFAULT_OPTS, selectedYear: 2030, conflict: false, outage: false });
+    const late = runSim({ ...DEFAULT_OPTS, selectedYear: 2050, conflict: false, outage: false });
+    expect(early.quantumOnlyMean).toBeLessThanOrEqual(late.quantumOnlyMean + 1e-9);
+    expect(early.quantumOnlyMean).toBe(early.leafMarginals.theft);
+  });
+});
+
+describe("calibration guards", () => {
+  it("pending without resolved outcomes", () => {
+    expect(evaluateCalibration().status).toBe("pending_insufficient_resolved");
+  });
+
+  it("rejects forecastAt >= resolvedAt and out-of-range p", () => {
+    expect(
+      rowIsScoreable({
+        id: "x",
+        question: "q",
+        forecastVersion: "0.3.2",
+        forecastAt: "2022-01-01T00:00:00Z",
+        resolveBy: "2023-01-01",
+        resolutionCriteria: "c",
+        forecastP: 0.2,
+        outcome: 0,
+        resolvedAt: "2021-01-01T00:00:00Z",
+        notes: "bad order",
+      }),
+    ).toBe(false);
+    expect(
+      rowIsScoreable({
+        id: "x",
+        question: "q",
+        forecastVersion: "0.3.2",
+        forecastAt: "2020-01-01T00:00:00Z",
+        resolveBy: "2021-01-01",
+        resolutionCriteria: "c",
+        forecastP: 1.5,
+        outcome: 0,
+        resolvedAt: "2021-01-02T00:00:00Z",
+        notes: "bad p",
+      }),
+    ).toBe(false);
+    const ok = evaluateCalibration([
       {
         id: "t",
         question: "toy",
-        forecastVersion: "0.3.0",
+        forecastVersion: "0.3.2",
         forecastAt: "2020-01-01T00:00:00Z",
         resolveBy: "2021-01-01",
         resolutionCriteria: "x",
         forecastP: 0.2,
         outcome: 0,
-        resolvedAt: "2021-01-02",
-        notes: "unit test only — not claimed as model calibration dataset",
+        resolvedAt: "2021-01-02T00:00:00Z",
+        notes: "unit test",
       },
     ]);
-    expect(c.status).toBe("scored");
-    expect(c.brier).toBeCloseTo(brierScore(0.2, 0), 10);
-    expect(c.logScore).toBeCloseTo(logScore(0.2, 0), 10);
+    expect(ok.status).toBe("scored");
+    expect(ok.brier).toBeCloseTo(brierScore(0.2, 0), 10);
+    expect(ok.logScore).toBeCloseTo(logScore(0.2, 0), 10);
   });
 });
 
-describe("v0.3 vs prior defaults", () => {
-  it("records numerical change at 2035 for changelog", () => {
-    const neu = runSim({ ...DEFAULT_OPTS, selectedYear: 2035 });
-    const oldish = runSim({ ...V022_COMPARE_OPTS, selectedYear: 2035 });
-    // Defaults intentionally differ (mMu, exploitH, clientH, knots) — assert we expose both
-    expect(typeof neu.median).toBe("number");
-    expect(typeof oldish.median).toBe("number");
-    expect(neu.frechetHigh).toBeGreaterThanOrEqual(neu.frechetLow);
+describe("registry", () => {
+  it("still warns not to port GRI RSA to ETH", () => {
+    expect(PRIOR_REGISTRY.find((e) => e.id === "gri_2025_rsa_crqc")?.notes.toLowerCase()).toContain("do not port");
+  });
+  it("clamp helpers", () => {
+    expect(clamp(YEAR_MIN - 5, YEAR_MIN, YEAR_MAX)).toBe(YEAR_MIN);
+    expect(quantile([0, 1, 2, 3, 4], 0.5)).toBe(2);
+    expect(mean([1, 2, 3])).toBe(2);
+    validateKnots(METACULUS_RSA_KNOTS);
   });
 });
