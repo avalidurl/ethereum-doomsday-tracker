@@ -27,9 +27,10 @@ function parseQuery(): Partial<SimOpts> & { chart?: ChartId; band?: boolean } {
   const y = num("y");
   if (y != null) out.selectedYear = clamp(Math.round(y), YEAR_MIN, YEAR_MAX);
   const qMu = num("qMu"); if (qMu != null) out.qMu = qMu;
-  const qSig = num("qSig"); if (qSig != null) out.qSig = qSig;
+  const qWidth = num("qW"); if (qWidth != null) out.qWidth = qWidth;
+  // legacy qSig ignored (was dead Normal σ)
   const mMu = num("mMu"); if (mMu != null) out.mMu = mMu;
-  const mSig = num("mSig"); if (mSig != null) out.mSig = mSig;
+  const mWidth = num("mW"); if (mWidth != null) out.mWidth = mWidth;
   const ex = num("ex"); if (ex != null) out.exploitH = ex / 100;
   const re = num("re"); if (re != null) out.residual = re / 100;
   const cl = num("cl"); if (cl != null) out.clientH = cl / 100;
@@ -45,6 +46,14 @@ function parseQuery(): Partial<SimOpts> & { chart?: ChartId; band?: boolean } {
   if (sp.get("q") === "1") out.quantumOn = true;
   if (sp.get("c") === "0") out.clientOn = false;
   if (sp.get("c") === "1") out.clientOn = true;
+  if (sp.get("th") === "0") out.theft = false;
+  if (sp.get("th") === "1") out.theft = true;
+  if (sp.get("cf") === "0") out.conflict = false;
+  if (sp.get("cf") === "1") out.conflict = true;
+  if (sp.get("ou") === "0") out.outage = false;
+  if (sp.get("ou") === "1") out.outage = true;
+  if (sp.get("qOver") === "1") out.qMuOverride = true;
+  if (sp.get("qOver") === "0") out.qMuOverride = false;
   const tm = sp.get("tm");
   if (tm === "eth_assumption" || tm === "rsa_proxy") out.timelineMode = tm;
   return out;
@@ -58,15 +67,19 @@ function writeQuery(opts: SimOpts, chart: ChartId, showBand: boolean) {
   sp.set("ch", chart);
   sp.set("band", showBand ? "1" : "0");
   sp.set("qMu", String(opts.qMu));
-  sp.set("qSig", String(opts.qSig));
+  sp.set("qW", String(opts.qWidth));
   sp.set("mMu", String(opts.mMu));
-  sp.set("mSig", String(opts.mSig));
+  sp.set("mW", String(opts.mWidth));
   sp.set("ex", String(Math.round(opts.exploitH * 1000) / 10));
   sp.set("re", String(Math.round(opts.residual * 100)));
   sp.set("cl", String(Math.round(opts.clientH * 10000) / 100));
   sp.set("q", opts.quantumOn ? "1" : "0");
   sp.set("c", opts.clientOn ? "1" : "0");
+  sp.set("th", opts.theft ? "1" : "0");
+  sp.set("cf", opts.conflict ? "1" : "0");
+  sp.set("ou", opts.outage ? "1" : "0");
   sp.set("tm", opts.timelineMode);
+  sp.set("qOver", opts.qMuOverride ? "1" : "0");
   const next = sp.toString();
   const cur = window.location.search.replace(/^\?/, "");
   if (cur !== next) {
@@ -115,7 +128,7 @@ export default function App() {
         </p>
         <p className="byline">Original risk publication</p>
         <p className="date">Web edition, November 6, 2026</p>
-        <div className="disclaimer-pill">v0.3 scenario model · Fréchet bounds · calibration pending</div>
+        <div className="disclaimer-pill">v0.3.2 scenario mean · Fréchet on mean marginals · calibration pending</div>
         <EvidenceSnapshotPanel />
       </header>
 

@@ -1,11 +1,10 @@
 /**
- * Ethereum L1 systemic-security scenario model v0.3
+ * Ethereum L1 systemic-security scenario model v0.3.2 (audit blockers addressed)
  *
- * - Versioned prior registry (see priorRegistry.ts)
- * - Knot/CDF timelines (RSA elicited kept separate from ETH ECDLP assumption)
- * - Event taxonomy with Fréchet union bounds (no fabricated correlation)
- * - Scenario composition under stated assumptions ≠ calibrated doom odds
- * - Calibration status: pending unless resolved archive exists
+ * Headline: unconditional scenario mean E[P(H_Y|θ)].
+ * Fréchet: on mean channel marginals (theft, client) — same estimand family as the mean.
+ * Epistemic bands: quantiles of P(H|θ) across θ draws — labelled separately.
+ * Client conflict∪outage: one unidentified hazard channel (no duplicate Frechet leaves).
  */
 
 import {
@@ -16,9 +15,15 @@ import {
 } from "../data/priorRegistry";
 import { evaluateCalibration, type CalibrationStatus } from "./calibration";
 import { frechetUnionBounds } from "./frechet";
-import { sampleYearFromKnots, shiftKnots, type Knot } from "./knots";
+import {
+  scaleKnotsAboutMedian,
+  shiftKnots,
+  type Knot,
+  yearAtCdf,
+} from "./knots";
+import { sampleYearFromKnots } from "./knots";
 
-export const PAGE_VERSION = "0.3.1";
+export const PAGE_VERSION = "0.3.2";
 export const PAGE_UPDATED = "2026-11-06";
 export const ANCHOR_DATE = "2026-11-06";
 export const MODEL_VERSION = REGISTRY_VERSION;
@@ -29,53 +34,66 @@ export const YEAR_MAX = 2055;
 export const N_DRAWS = 3000;
 export const SEED = 42;
 
+/** Default knot half-width reference (years from median to outer interior knot) for width=1. */
+export const DEFAULT_Q_WIDTH = 1;
+export const DEFAULT_M_WIDTH = 1;
+
 export type ScenarioId = "orderly" | "q_accel" | "delayed" | "client";
 export type SpreadId = "50" | "80" | "95";
 export type ChartId = "cumulative" | "annual" | "survival";
-/** eth_assumption = default ECDLP knots; rsa_proxy = Metaculus RSA shape as explicit related scenario (not identification). */
 export type TimelineMode = "eth_assumption" | "rsa_proxy";
 
 export type SimOpts = {
   selectedYear: number;
-  /** Kept for UI: shifts eth knots so median≈qMu when using assumption mode helpers — see buildQKnots */
+  /** Capability timeline center (eth_assumption). Ignored for rsa_proxy unless qMuOverride. */
   qMu: number;
-  qSig: number;
+  /** Knot width factor about median (1 = published/assumption interior span). Not a Normal σ. */
+  qWidth: number;
   mMu: number;
-  mSig: number;
+  mWidth: number;
   exploitH: number;
   residual: number;
   clientH: number;
   quantumOn: boolean;
   clientOn: boolean;
-  /** Leaf: material quantum at-rest theft path in resolution union */
+  /** Quantum theft channel in H_Y */
   theft: boolean;
-  /** Leaf: conflicting finalized views */
+  /**
+   * Client failure group (conflict ∪ outage). Taxonomy may name both modes; probability uses one
+   * unidentified client hazard — toggles are OR'd into a single channel (no split weights).
+   */
   conflict: boolean;
-  /** Leaf: ≥72h finality interruption */
   outage: boolean;
   scenario: ScenarioId;
   spread: SpreadId;
   timelineMode: TimelineMode;
+  /** When true with rsa_proxy, allow qMu to shift Metaculus knots; default false = source knots unshifted. */
+  qMuOverride: boolean;
 };
 
-export type LeafMarginals = {
+export type ChannelMarginals = {
   theft: number;
-  conflict: number;
-  outage: number;
+  /** Single client channel = conflict ∪ outage under one hazard */
+  client: number;
 };
 
 export type SimResult = {
   years: number[];
   selectedYear: number;
-  /** Scenario-composition P(H_Y) under stated dependence/composition assumptions — NOT a calibrated doom point */
+  /**
+   * Unconditional scenario mean E[P(H_Y|θ)] — headline estimand.
+   * (Field name `median` retained for UI wiring; prefer `scenarioMean` / readout labels.)
+   */
   median: number;
-  /** Epistemic model-spread band on scenario composition */
+  scenarioMean: number;
+  /** Epistemic median of P(H|θ) across draws — not the headline Frechet pair. */
+  scenarioP50: number;
   low: number;
   high: number;
-  /** Fréchet–Hoeffding identification bounds on union of enabled leaf marginals */
+  /** Fréchet–Hoeffding on mean channel marginals (theft, client) */
   frechetLow: number;
   frechetHigh: number;
-  leafMarginals: LeafMarginals;
+  leafMarginals: ChannelMarginals;
   p025: number;
   p10: number;
   p50: number;
@@ -91,7 +109,13 @@ export type SimResult = {
   survMed: number[];
   survHigh: number[];
   hist: { centers: number[]; counts: number[] };
+  /** Mean P(quantum-only path fires by selectedYear) */
+  quantumOnlyMean: number;
+  /** Mean P(client-only path fires by selectedYear) */
+  clientOnlyMean: number;
+  /** @deprecated alias of quantumOnlyMean */
   quantumOnlyMed: number;
+  /** @deprecated alias of clientOnlyMean */
   clientOnlyMed: number;
   sensitivity: { label: string; delta: number }[];
   calibration: CalibrationStatus;
@@ -126,6 +150,13 @@ export function quantile(sorted: number[], p: number) {
   return sorted[idx]!;
 }
 
+export function mean(xs: number[]) {
+  if (xs.length === 0) return 0;
+  let s = 0;
+  for (const x of xs) s += x;
+  return s / xs.length;
+}
+
 export function pct(x: number, digits = 1) {
   return `${(100 * x).toFixed(digits)}%`;
 }
@@ -145,70 +176,44 @@ export function spreadBounds(spread: SpreadId): [number, number] {
   return [0.025, 0.975];
 }
 
-/** Build Q knots: recenter eth assumption so 0.5 knot ≈ qMu; rsa_proxy uses Metaculus shape + qMu recenter. */
-export function buildQKnots(opts: Pick<SimOpts, "timelineMode" | "qMu" | "scenario">): Knot[] {
-  const off = scenarioOffsets(opts.scenario);
-  const base =
-    opts.timelineMode === "rsa_proxy"
-      ? METACULUS_RSA_KNOTS.map((k) => ({ ...k }))
-      : ETH_ECDLP_ASSUMPTION_KNOTS.map((k) => ({ ...k }));
-  const mid = base.find((k) => k.cdf === 0.5)?.year ?? base[Math.floor(base.length / 2)]!.year;
-  const delta = opts.qMu - mid + off.qShift;
-  return shiftKnots(base, delta);
+export function metaculusRsaMedianYear(): number {
+  return yearAtCdf(METACULUS_RSA_KNOTS, 0.5);
 }
 
-export function buildMKnots(opts: Pick<SimOpts, "mMu" | "scenario">): Knot[] {
-  const off = scenarioOffsets(opts.scenario);
-  const base = MIGRATION_ASSUMPTION_KNOTS.map((k) => ({ ...k }));
-  const mid = base.find((k) => k.cdf === 0.5)?.year ?? 2032;
-  const delta = opts.mMu - mid + off.mShift;
-  return shiftKnots(base, delta);
+export function clientChannelOn(opts: Pick<SimOpts, "clientOn" | "conflict" | "outage">): boolean {
+  return opts.clientOn && (opts.conflict || opts.outage);
 }
 
 /**
- * Event taxonomy (horizon end-Y):
- *   H_Y = Theft ∪ Conflict ∪ Outage
- * Theft ← quantum channel (if quantumOn & theft)
- * Conflict ∪ Outage ← client channel (if clientOn & respective leaf)
- * Single MC path does not double-count: one failure year fires H once.
- * Leaf marginals tracked separately for Fréchet bounds.
+ * Q knots:
+ * - eth_assumption: ETH interior knots, width-scaled, recentered to qMu, + scenario shift
+ * - rsa_proxy: Metaculus source knots unshifted (unless qMuOverride), width-scaled, + scenario shift only
  */
-
-/** Single-leaf probability vector (same per-draw seeds as joint). */
-function runCoreLeafProbs(
-  opts: Omit<SimOpts, "spread">,
-  qKnots: Knot[],
-  mKnots: Knot[],
-  years: number[],
-  yiSel: number,
-  leaf: "theft" | "conflict" | "outage",
-): number[] {
+export function buildQKnots(
+  opts: Pick<SimOpts, "timelineMode" | "qMu" | "qWidth" | "scenario" | "qMuOverride">,
+): Knot[] {
   const off = scenarioOffsets(opts.scenario);
-  const clientH = opts.clientH * off.cMul;
-  const out: number[] = [];
-  for (let i = 0; i < N_DRAWS; i++) {
-    const rnd = mulberry32((SEED + Math.imul(i + 1, 0x9e3779b9)) >>> 0);
-    const q = sampleYearFromKnots(rnd, qKnots);
-    const m = sampleYearFromKnots(rnd, mKnots);
-    const resid = clamp(opts.residual + normal(rnd, 0, 0.04), 0.01, 0.9);
-    const hcNoise = Math.exp(normal(rnd, 0, 0.35));
-    const hqNoise = normal(rnd, 0, 0.03);
-    const hqPeak = leaf === "theft" ? Math.max(0, opts.exploitH + hqNoise) : 0;
-    const hcBase = leaf !== "theft" ? Math.max(0, clientH * hcNoise) : 0;
-    let surv = 1;
-    const cum: number[] = [];
-    for (const y of years) {
-      const exposure = y < m ? 1 : resid;
-      const hq = leaf === "theft" && y >= q ? hqPeak * exposure : 0;
-      const hc = leaf !== "theft" ? hcBase : 0;
-      const h = clamp(1 - (1 - hq) * (1 - hc), 0, 0.95);
-      surv *= 1 - h;
-      cum.push(1 - surv);
+  if (opts.timelineMode === "rsa_proxy") {
+    let k = METACULUS_RSA_KNOTS.map((x) => ({ ...x }));
+    k = scaleKnotsAboutMedian(k, opts.qWidth);
+    if (opts.qMuOverride) {
+      const mid = yearAtCdf(k, 0.5);
+      k = shiftKnots(k, opts.qMu - mid);
     }
-    out.push(cum[yiSel]!);
+    return shiftKnots(k, off.qShift);
   }
-  out.sort((a, b) => a - b);
-  return out;
+  let k = ETH_ECDLP_ASSUMPTION_KNOTS.map((x) => ({ ...x }));
+  k = scaleKnotsAboutMedian(k, opts.qWidth);
+  const mid = yearAtCdf(k, 0.5);
+  return shiftKnots(k, opts.qMu - mid + off.qShift);
+}
+
+export function buildMKnots(opts: Pick<SimOpts, "mMu" | "mWidth" | "scenario">): Knot[] {
+  const off = scenarioOffsets(opts.scenario);
+  let k = MIGRATION_ASSUMPTION_KNOTS.map((x) => ({ ...x }));
+  k = scaleKnotsAboutMedian(k, opts.mWidth);
+  const mid = yearAtCdf(k, 0.5);
+  return shiftKnots(k, opts.mMu - mid + off.mShift);
 }
 
 export function runCore(opts: Omit<SimOpts, "spread">) {
@@ -218,77 +223,73 @@ export function runCore(opts: Omit<SimOpts, "spread">) {
   const mKnots = buildMKnots(opts);
 
   const theftOn = opts.quantumOn && opts.theft;
-  const conflictOn = opts.clientOn && opts.conflict;
-  const outageOn = opts.clientOn && opts.outage;
-  const clientLeafOn = conflictOn || outageOn;
+  const clientOn = clientChannelOn(opts);
 
   const years: number[] = [];
   for (let y = NOW; y <= SIM_END; y++) years.push(y);
   const yiSel = Math.max(0, years.indexOf(opts.selectedYear));
 
   const probs: number[] = [];
+  const theftProbs: number[] = [];
+  const clientProbs: number[] = [];
   const cumTraj: number[][] = [];
   const annTraj: number[][] = [];
   const survTraj: number[][] = [];
-  let qOnlySum = 0;
-  let cOnlySum = 0;
 
   for (let i = 0; i < N_DRAWS; i++) {
-    // Per-draw seed: option toggles must not desynchronize the RNG stream
     const rnd = mulberry32((SEED + Math.imul(i + 1, 0x9e3779b9)) >>> 0);
     const q = sampleYearFromKnots(rnd, qKnots);
     const m = sampleYearFromKnots(rnd, mKnots);
-    // Always consume hazard noise slots in fixed order (even if channel off)
     const resid = clamp(opts.residual + normal(rnd, 0, 0.04), 0.01, 0.9);
     const hcNoise = Math.exp(normal(rnd, 0, 0.35));
     const hqNoise = normal(rnd, 0, 0.03);
-    const hcBase = clientLeafOn ? Math.max(0, clientH * hcNoise) : 0;
-    const hqPeak = theftOn ? Math.max(0, opts.exploitH + hqNoise) : 0;
+    const hcBase = Math.max(0, clientH * hcNoise);
+    const hqPeak = Math.max(0, opts.exploitH + hqNoise);
 
     let surv = 1;
-    let survQ = 1;
-    let survC = 1;
+    let survTheft = 1;
+    let survClient = 1;
     const cum: number[] = [];
     const ann: number[] = [];
     const sv: number[] = [];
+    let theftAtSel = 0;
+    let clientAtSel = 0;
 
-    for (const y of years) {
+    for (let yi = 0; yi < years.length; yi++) {
+      const y = years[yi]!;
       const exposure = y < m ? 1 : resid;
       const hq = theftOn && y >= q ? hqPeak * exposure : 0;
-      const hc = clientLeafOn ? hcBase : 0;
+      const hc = clientOn ? hcBase : 0;
       const h = clamp(1 - (1 - hq) * (1 - hc), 0, 0.95);
       const mass = surv * h;
       surv *= 1 - h;
-      survQ *= 1 - clamp(hq, 0, 0.95);
-      survC *= 1 - clamp(hc, 0, 0.95);
+      if (theftOn) {
+        const hqOnly = y >= q ? hqPeak * exposure : 0;
+        survTheft *= 1 - clamp(hqOnly, 0, 0.95);
+      }
+      if (clientOn) {
+        survClient *= 1 - clamp(hcBase, 0, 0.95);
+      }
       cum.push(1 - surv);
       ann.push(mass);
       sv.push(surv);
+      if (yi === yiSel) {
+        theftAtSel = theftOn ? 1 - survTheft : 0;
+        clientAtSel = clientOn ? 1 - survClient : 0;
+      }
     }
 
     probs.push(cum[yiSel]!);
+    if (theftOn) theftProbs.push(theftAtSel);
+    if (clientOn) clientProbs.push(clientAtSel);
     cumTraj.push(cum);
     annTraj.push(ann);
     survTraj.push(sv);
-    qOnlySum += 1 - survQ;
-    cOnlySum += 1 - survC;
   }
 
-  // Leaf marginals = scenario median under each leaf alone (same seed family) for Fréchet inputs
-  const leafTheft = theftOn
-    ? quantile(
-        runCoreLeafProbs(opts, qKnots, mKnots, years, yiSel, "theft"),
-        0.5,
-      )
-    : 0;
-  const leafConflict = conflictOn
-    ? quantile(runCoreLeafProbs(opts, qKnots, mKnots, years, yiSel, "conflict"), 0.5)
-    : 0;
-  const leafOutage = outageOn
-    ? quantile(runCoreLeafProbs(opts, qKnots, mKnots, years, yiSel, "outage"), 0.5)
-    : 0;
+  const quantumOnlyMean = theftOn ? mean(theftProbs) : 0;
+  const clientOnlyMean = clientOn ? mean(clientProbs) : 0;
 
-  probs.sort((a, b) => a - b);
   return {
     years,
     yiSel,
@@ -296,16 +297,14 @@ export function runCore(opts: Omit<SimOpts, "spread">) {
     cumTraj,
     annTraj,
     survTraj,
-    quantumOnlyMed: qOnlySum / N_DRAWS,
-    clientOnlyMed: cOnlySum / N_DRAWS,
+    quantumOnlyMean,
+    clientOnlyMean,
     leafMarginals: {
-      theft: leafTheft,
-      conflict: leafConflict,
-      outage: leafOutage,
-    } satisfies LeafMarginals,
+      theft: quantumOnlyMean,
+      client: clientOnlyMean,
+    } satisfies ChannelMarginals,
     theftOn,
-    conflictOn,
-    outageOn,
+    clientOn,
   };
 }
 
@@ -321,9 +320,11 @@ export function runSim(opts: SimOpts): SimResult {
 
   const enabledMarginals: number[] = [];
   if (core.theftOn) enabledMarginals.push(leafMarginals.theft);
-  if (core.conflictOn) enabledMarginals.push(leafMarginals.conflict);
-  if (core.outageOn) enabledMarginals.push(leafMarginals.outage);
+  if (core.clientOn) enabledMarginals.push(leafMarginals.client);
   const frechet = frechetUnionBounds(enabledMarginals);
+
+  const scenarioMean = mean(probs);
+  const sorted = [...probs].sort((a, b) => a - b);
 
   const cumLow: number[] = [];
   const cumMed: number[] = [];
@@ -357,45 +358,47 @@ export function runSim(opts: SimOpts): SimResult {
   const centers = counts.map((_, i) => (i + 0.5) / bins);
   const norm = counts.map((c) => c / maxC);
 
-  const baseMed = quantile(probs, 0.5);
+  const baseMean = scenarioMean;
   const perturbs: { label: string; patch: Partial<Omit<SimOpts, "spread">> }[] = [
-    { label: "Q median −3y", patch: { qMu: opts.qMu - 3 } },
-    { label: "Q median +3y", patch: { qMu: opts.qMu + 3 } },
-    { label: "M median −2y", patch: { mMu: opts.mMu - 2 } },
-    { label: "M median +2y", patch: { mMu: opts.mMu + 2 } },
+    { label: "Q center −3y", patch: { qMu: opts.qMu - 3, qMuOverride: true } },
+    { label: "Q center +3y", patch: { qMu: opts.qMu + 3, qMuOverride: true } },
+    { label: "M center −2y", patch: { mMu: opts.mMu - 2 } },
+    { label: "M center +2y", patch: { mMu: opts.mMu + 2 } },
     { label: "Exploit +3pp", patch: { exploitH: opts.exploitH + 0.03 } },
     { label: "Residual +10pp", patch: { residual: clamp(opts.residual + 0.1, 0.01, 0.9) } },
     { label: "Client ×2", patch: { clientH: opts.clientH * 2 } },
-    { label: "RSA-proxy timeline", patch: { timelineMode: "rsa_proxy" } },
+    { label: "RSA-proxy (source)", patch: { timelineMode: "rsa_proxy", qMuOverride: false } },
   ];
   const sensitivity = perturbs.map(({ label, patch }) => {
     const alt = runCore({ ...opts, ...patch });
-    return { label, delta: quantile(alt.probs, 0.5) - baseMed };
+    return { label, delta: mean(alt.probs) - baseMean };
   });
 
   const calibration = evaluateCalibration();
-  const median = quantile(probs, 0.5);
   const readout =
-    `Scenario composition P(H≤${opts.selectedYear})=${pct(median)} under competing-risk union ` +
-    `(no double-count). Fréchet identification bounds on enabled leaves: ` +
-    `${pct(frechet.low)}–${pct(frechet.high)}. ` +
-    `Epistemic band (${opts.spread}% model-spread): ${pct(quantile(probs, loP))}–${pct(quantile(probs, hiP))}. ` +
-    `Timeline: ${opts.timelineMode}. ${calibration.message}`;
+    `Scenario mean E[P(H≤${opts.selectedYear})]=${pct(scenarioMean)} (unconditional over θ). ` +
+    `Fréchet on mean channel marginals (theft, client): ${pct(frechet.low)}–${pct(frechet.high)}. ` +
+    `Epistemic ${opts.spread}% band of P(H|θ): ${pct(quantile(sorted, loP))}–${pct(quantile(sorted, hiP))} ` +
+    `(p50=${pct(quantile(sorted, 0.5))}). Timeline=${opts.timelineMode}` +
+    `${opts.timelineMode === "rsa_proxy" && !opts.qMuOverride ? " (Metaculus knots unshifted)" : ""}. ` +
+    `${calibration.message}`;
 
   return {
     years,
     selectedYear: opts.selectedYear,
-    median,
-    low: quantile(probs, loP),
-    high: quantile(probs, hiP),
+    median: scenarioMean,
+    scenarioMean,
+    scenarioP50: quantile(sorted, 0.5),
+    low: quantile(sorted, loP),
+    high: quantile(sorted, hiP),
     frechetLow: frechet.low,
     frechetHigh: frechet.high,
     leafMarginals,
-    p025: quantile(probs, 0.025),
-    p10: quantile(probs, 0.1),
-    p50: quantile(probs, 0.5),
-    p90: quantile(probs, 0.9),
-    p975: quantile(probs, 0.975),
+    p025: quantile(sorted, 0.025),
+    p10: quantile(sorted, 0.1),
+    p50: quantile(sorted, 0.5),
+    p90: quantile(sorted, 0.9),
+    p975: quantile(sorted, 0.975),
     cumLow,
     cumMed,
     cumHigh,
@@ -406,41 +409,23 @@ export function runSim(opts: SimOpts): SimResult {
     survMed,
     survHigh,
     hist: { centers, counts: norm },
-    quantumOnlyMed: core.quantumOnlyMed,
-    clientOnlyMed: core.clientOnlyMed,
+    quantumOnlyMean: core.quantumOnlyMean,
+    clientOnlyMean: core.clientOnlyMean,
+    quantumOnlyMed: core.quantumOnlyMean,
+    clientOnlyMed: core.clientOnlyMean,
     sensitivity,
     calibration,
     readout,
   };
 }
 
-/** v0.3 defaults — changed vs v0.2.2: knot timelines, lower unidentified hazards, timelineMode, taxonomy. */
+/** Restored legacy unidentified hazard defaults (v0.2.2 magnitudes); knot timelines remain. */
 export const DEFAULT_OPTS: SimOpts = {
   selectedYear: 2035,
   qMu: 2038,
-  qSig: 4.5, // retained for UI compatibility; sampling uses knots
-  mMu: 2032,
-  mSig: 2.5,
-  exploitH: 0.06,
-  residual: 0.18,
-  clientH: 0.004,
-  quantumOn: true,
-  clientOn: true,
-  theft: true,
-  conflict: true,
-  outage: true,
-  scenario: "orderly",
-  spread: "80",
-  timelineMode: "eth_assumption",
-};
-
-/** Frozen v0.2.2-style defaults for comparison tests / changelog (Normal-era semantics approximated). */
-export const V022_COMPARE_OPTS: SimOpts = {
-  selectedYear: 2035,
-  qMu: 2038,
-  qSig: 4.5,
+  qWidth: DEFAULT_Q_WIDTH,
   mMu: 2031,
-  mSig: 2.5,
+  mWidth: DEFAULT_M_WIDTH,
   exploitH: 0.08,
   residual: 0.15,
   clientH: 0.005,
@@ -452,4 +437,7 @@ export const V022_COMPARE_OPTS: SimOpts = {
   scenario: "orderly",
   spread: "80",
   timelineMode: "eth_assumption",
+  qMuOverride: false,
 };
+
+export const V022_COMPARE_OPTS: SimOpts = { ...DEFAULT_OPTS };

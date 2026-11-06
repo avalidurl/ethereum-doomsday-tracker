@@ -1,17 +1,15 @@
 /**
  * Proper-scoring scaffolding + archive.
  * DISPLAY: calibration pending unless a defensible resolved proxy set exists.
- * Changing model odds ≠ calibration.
  */
 
 export type ForecastArchiveRow = {
   id: string;
   question: string;
   forecastVersion: string;
-  forecastAt: string; // ISO
+  forecastAt: string;
   resolveBy: string;
   resolutionCriteria: string;
-  /** Our model's stated forecast at freeze time — must be recorded before resolution */
   forecastP?: number;
   outcome?: 0 | 1;
   resolvedAt?: string;
@@ -19,63 +17,78 @@ export type ForecastArchiveRow = {
 };
 
 export type CalibrationStatus = {
-  status: "pending_insufficient_resolved" | "scored";
+  status: "pending_insufficient_resolved" | "scored" | "invalid_rows";
   message: string;
   nResolved: number;
   brier?: number;
   logScore?: number;
 };
 
-/** Prospective scorecard — resolvable proxies; no fabricated outcomes. */
 export const PROSPECTIVE_SCORECARD: ForecastArchiveRow[] = [
   {
     id: "proxy-metaculus-30596",
     question: "Metaculus 30596: RSA-2048 factored by quantum computer (year → Jan 1)",
-    forecastVersion: "0.3.0",
+    forecastVersion: "0.3.2",
     forecastAt: "2026-11-06T20:00:00Z",
     resolveBy: "2075-01-01",
     resolutionCriteria:
       "Jan 1 of year of first QC factorization per credible sources; >2074-12-31 if none; annul if classical first.",
-    notes:
-      "External elicited question — tracking as related CRQC proxy, NOT as Ethereum L1 failure. Our model does not claim this as its own calibrated forecast of ETH doom.",
+    notes: "External elicited proxy — not Ethereum L1 failure. No frozen forecastP for this model yet.",
   },
   {
     id: "proxy-eth-pq-mainnet-milestone",
     question: "Ethereum mainnet ships a protocol-level PQ signature path for EOAs (owner-adjudicated)",
-    forecastVersion: "0.3.0",
+    forecastVersion: "0.3.2",
     forecastAt: "2026-11-06T20:00:00Z",
     resolveBy: "2040-01-01",
     resolutionCriteria:
-      "Yes if a mainnet hard fork enabling native PQ or hybrid PQ signatures for externally owned accounts is activated before resolveBy; else No. Adjudication note required at resolve.",
-    notes: "Resolvable migration proxy — forecastP left unset until owner freezes a stated P.",
+      "Yes if a mainnet hard fork enabling native PQ or hybrid PQ signatures for EOAs activates before resolveBy.",
+    notes: "forecastP unset until owner freezes a stated P.",
   },
 ];
 
-/** Search result: no in-scope defensible resolved timestamped set with pre-outcome freezes for THIS model. */
+function validTs(iso: string): boolean {
+  const t = Date.parse(iso);
+  return Number.isFinite(t);
+}
+
+export function rowIsScoreable(r: ForecastArchiveRow): r is ForecastArchiveRow & {
+  forecastP: number;
+  outcome: 0 | 1;
+  resolvedAt: string;
+} {
+  if (r.outcome !== 0 && r.outcome !== 1) return false;
+  if (typeof r.forecastP !== "number" || !Number.isFinite(r.forecastP) || r.forecastP < 0 || r.forecastP > 1)
+    return false;
+  if (!r.resolvedAt || !validTs(r.forecastAt) || !validTs(r.resolvedAt)) return false;
+  if (Date.parse(r.forecastAt) >= Date.parse(r.resolvedAt)) return false;
+  return true;
+}
+
 export function evaluateCalibration(archive: ForecastArchiveRow[] = PROSPECTIVE_SCORECARD): CalibrationStatus {
-  const resolved = archive.filter((r) => r.outcome === 0 || r.outcome === 1);
-  if (resolved.length === 0) {
+  const resolvedAttempted = archive.filter((r) => r.outcome === 0 || r.outcome === 1);
+  const scored = archive.filter(rowIsScoreable);
+  if (resolvedAttempted.length > 0 && scored.length < resolvedAttempted.length) {
     return {
-      status: "pending_insufficient_resolved",
+      status: "invalid_rows",
       message:
-        "Calibration pending / insufficient resolved observations. No defensible in-scope dataset of pre-outcome frozen forecasts with resolutions for this model. Elicited external forecasts (GRI, Metaculus) are not our calibration.",
-      nResolved: 0,
+        "Some resolved rows fail guards (forecastAt < resolvedAt, finite p∈[0,1]). No scores reported.",
+      nResolved: scored.length,
     };
   }
-  // If outcomes exist, score only rows with forecastP
-  const scored = resolved.filter((r) => typeof r.forecastP === "number");
   if (scored.length === 0) {
     return {
       status: "pending_insufficient_resolved",
-      message: "Outcomes exist but no frozen forecastP — cannot score.",
-      nResolved: resolved.length,
+      message:
+        "Calibration pending / insufficient resolved observations. No defensible in-scope dataset of pre-outcome frozen forecasts with resolutions for this model.",
+      nResolved: 0,
     };
   }
   let brier = 0;
   let logScore = 0;
   for (const r of scored) {
-    const p = Math.min(1 - 1e-12, Math.max(1e-12, r.forecastP!));
-    const o = r.outcome!;
+    const p = Math.min(1 - 1e-12, Math.max(1e-12, r.forecastP));
+    const o = r.outcome;
     brier += (p - o) ** 2;
     logScore += o === 1 ? Math.log(p) : Math.log(1 - p);
   }

@@ -24,7 +24,7 @@ export type PriorEntry = {
   notes: string;
 };
 
-export const REGISTRY_VERSION = "0.3.0";
+export const REGISTRY_VERSION = "0.3.2";
 export const REGISTRY_AS_OF = "2026-11-06";
 
 /** Metaculus 30596 — RSA-2048 factorization by QC (elicited crowd). NOT Ethereum ECDSA. */
@@ -106,7 +106,7 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     kind: "unidentified",
     sourceScope: "No defensible public frequency series for CRQC-era ETH L1 theft",
     asOf: "2026-11-06",
-    valueSummary: "Default 0.06 — user assumption / unidentified; not calibrated",
+    valueSummary: "Default 0.08 — restored legacy unidentified assumption; not calibrated",
     notes: "EVMbench/SCONE are app-layer and excluded from this parameter.",
   },
   {
@@ -116,7 +116,7 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     kind: "unidentified",
     sourceScope: "Google dormant/at-rest framing qualitative only",
     asOf: "2026-11-06",
-    valueSummary: "Default 0.18 — unidentified",
+    valueSummary: "Default 0.15 — restored legacy unidentified assumption",
     notes: "Point value is an assumption for scenarios; identification bounds via Fréchet on leaves.",
   },
   {
@@ -128,7 +128,7 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
       "Hive public listing.jsonl is conformance health, not a calibrated finality-failure rate (dossier 2026-11-06).",
     sourceUrl: "https://hive.ethpandaops.io/generic/listing.jsonl",
     asOf: "2026-11-06",
-    valueSummary: "Default 0.004 — unidentified; Hive not used as rate",
+    valueSummary: "Default 0.005 — restored legacy unidentified assumption; Hive not used as rate",
     notes: "Do not treat Hive fail counts as P(outage).",
   },
   {

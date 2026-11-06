@@ -4,7 +4,6 @@ import {
   type SimOpts,
   type SimResult,
   type SpreadId,
-  type TimelineMode,
   YEAR_MAX,
   YEAR_MIN,
   N_DRAWS,
@@ -43,29 +42,30 @@ export function ForecastRail({
       <div className="rail-label">Scenario forecast rail (v0.3)</div>
       <div className="stat-strip">
         <div className="stat">
-          <div className="v danger">{pct(sim.median)}</div>
-          <div className="l">Scenario Yes by end-{Y}</div>
+          <div className="v danger">{pct(sim.scenarioMean)}</div>
+          <div className="l">Scenario mean Yes by end-{Y}</div>
         </div>
         <div className="stat">
-          <div className="v">{pct(1 - sim.median)}</div>
-          <div className="l">Scenario No</div>
+          <div className="v">{pct(1 - sim.scenarioMean)}</div>
+          <div className="l">Scenario mean No</div>
         </div>
         <div className="stat">
           <div className="v">
             {pct(sim.frechetLow)}–{pct(sim.frechetHigh)}
           </div>
-          <div className="l">Fréchet union bounds</div>
+          <div className="l">Fréchet (mean marginals)</div>
         </div>
         <div className="stat">
           <div className="v">
             {pct(sim.low)}–{pct(sim.high)}
           </div>
-          <div className="l">{opts.spread}% epistemic spread</div>
+          <div className="l">{opts.spread}% epistemic (P|θ)</div>
         </div>
       </div>
       <p className="rail-note" style={{ marginTop: 0 }}>
-        Scenario P uses competing-risk composition (no double-count). Fréchet bounds are identification limits from
-        leaf marginals only — not a calibrated correlation. Draws {N_DRAWS} · seed {SEED}.
+        Headline is E[P(H|θ)], not the median of draws. Fréchet uses mean theft/client channel marginals (same
+        estimand family). Epistemic band is quantiles of P(H|θ). Client conflict∪outage share one hazard. Draws{" "}
+        {N_DRAWS} · seed {SEED}. p50={pct(sim.scenarioP50)}.
       </p>
 
       <div className="chart-frame">
@@ -167,17 +167,24 @@ export function ForecastRail({
           <input type="checkbox" checked={false} disabled readOnly />
         </div>
         <div className="toggle-row">
-          <span>Leaf: quantum theft</span>
+          <span>Channel: quantum theft</span>
           <input type="checkbox" checked={opts.theft} onChange={(e) => onChange({ theft: e.target.checked })} />
         </div>
         <div className="toggle-row">
-          <span>Leaf: finality conflict</span>
-          <input type="checkbox" checked={opts.conflict} onChange={(e) => onChange({ conflict: e.target.checked })} />
+          <span>Channel: client failure (conflict ∪ outage ≥72h)</span>
+          <input
+            type="checkbox"
+            checked={opts.conflict || opts.outage}
+            onChange={(e) => {
+              const on = e.target.checked;
+              onChange({ conflict: on, outage: on });
+            }}
+          />
         </div>
-        <div className="toggle-row">
-          <span>Leaf: outage ≥72h</span>
-          <input type="checkbox" checked={opts.outage} onChange={(e) => onChange({ outage: e.target.checked })} />
-        </div>
+        <p className="rail-note">
+          Taxonomy may name conflict and outage separately; this model uses one unidentified client hazard (no split
+          weights).
+        </p>
       </details>
 
       <details className="rail-group" open>
@@ -193,15 +200,25 @@ export function ForecastRail({
               key={id}
               type="button"
               className={opts.timelineMode === id ? "on" : ""}
-              onClick={() => onChange({ timelineMode: id as TimelineMode })}
+              onClick={() => {
+                if (id === "rsa_proxy") {
+                  onChange({
+                    timelineMode: "rsa_proxy",
+                    qMuOverride: false,
+                    qMu: 2033.68,
+                  });
+                } else {
+                  onChange({ timelineMode: "eth_assumption", qMuOverride: false, qMu: 2038 });
+                }
+              }}
             >
               {lab}
             </button>
           ))}
         </div>
         <p className="rail-note">
-          RSA proxy uses Metaculus 30596 shape as a related CRQC-era scenario — not identification of Ethereum failure
-          with RSA-2048 factorization. GRI RSA % bands are not ported into L1 odds.
+          RSA proxy uses Metaculus 30596 knots <strong>unshifted</strong> (source center ≈2033.7) unless you enable an
+          explicit override. Not identification with Ethereum L1 failure. GRI RSA % not ported.
         </p>
       </details>
 
@@ -209,10 +226,10 @@ export function ForecastRail({
         <summary>Prior assumptions</summary>
         {(
           [
-            ["qMu", "Q median year", 2028, 2055, 1, opts.qMu, (v: number) => ({ qMu: v })],
-            ["qSig", "Q spread σ (y)", 0.5, 12, 0.5, opts.qSig, (v: number) => ({ qSig: v })],
-            ["mMu", "Migration median", 2027, 2050, 1, opts.mMu, (v: number) => ({ mMu: v })],
-            ["mSig", "Migration σ (y)", 0.5, 10, 0.5, opts.mSig, (v: number) => ({ mSig: v })],
+            ["qMu", "Q center year", 2028, 2055, 1, opts.qMu, (v: number) => ({ qMu: v, qMuOverride: true })],
+            ["qW", "Q knot width ×", 0.25, 3, 0.05, opts.qWidth, (v: number) => ({ qWidth: v })],
+            ["mMu", "Migration center", 2027, 2050, 1, opts.mMu, (v: number) => ({ mMu: v })],
+            ["mW", "M knot width ×", 0.25, 3, 0.05, opts.mWidth, (v: number) => ({ mWidth: v })],
             ["exploit", "Exploit hazard %/y", 0, 25, 0.5, opts.exploitH * 100, (v: number) => ({ exploitH: v / 100 })],
             ["resid", "Residual exposure %", 1, 60, 1, opts.residual * 100, (v: number) => ({ residual: v / 100 })],
             ["client", "Client hazard %/y", 0, 3, 0.05, opts.clientH * 100, (v: number) => ({ clientH: v / 100 })],
@@ -246,7 +263,7 @@ export function ForecastRail({
           <Histogram sim={sim} />
         </div>
         <div className="ctrl">
-          <label>Sensitivity (Δ median P)</label>
+          <label>Sensitivity (Δ scenario mean)</label>
           {sim.sensitivity.map((s) => {
             const mag = Math.min(1, Math.abs(s.delta) / 0.08);
             const pos = s.delta >= 0;
@@ -275,8 +292,7 @@ export function ForecastRail({
       <div className="ctrl">
         <label>Leaf marginals @ {Y}</label>
         <p className="rail-note">
-          theft {pct(sim.leafMarginals.theft)} · conflict {pct(sim.leafMarginals.conflict)} · outage{" "}
-          {pct(sim.leafMarginals.outage)}
+          theft {pct(sim.leafMarginals.theft)} · client {pct(sim.leafMarginals.client)}
         </p>
       </div>
       <p className="rail-note">{sim.readout}</p>
