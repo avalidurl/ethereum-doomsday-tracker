@@ -4,8 +4,6 @@ Standalone illustrative risk publication: an original Ethereum L1 systemic-secur
 
 **Not calibrated odds. Not a live market. Synthetic seeded priors only.**
 
-Visual language references [AI 2040](https://ai-2040.com/) (cream / deep red / sticky analytical rail) and [Commanding Heights](https://commanding-heights.com/) (editorial masthead, roman spine) without copying their identity, logos, or narrative.
-
 ## Stack
 
 - Vite + React + TypeScript

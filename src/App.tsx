@@ -136,8 +136,12 @@ export default function App() {
       </div>
 
       <footer className="site-foot">
-        Illustrative toy model · not affiliated with Metaculus, AI Futures / AI 2040, Commanding Heights, OpenAI,
-        Anthropic, Google, or the Ethereum Foundation · visual language references only
+        Ethereum Doomsday Tracker · v0.2.0 ·{" "}
+        <a href="#sources">Sources</a>
+        {" · "}
+        <a href="#methods">Methods</a>
+        {" · "}
+        Synthetic priors · not calibrated odds
       </footer>
     </>
   );
