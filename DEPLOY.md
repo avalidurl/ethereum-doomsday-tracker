@@ -1,3 +1,22 @@
+# Deployment — Cloudflare Pages via gokhan-memex (ACTIVE PATH)
+
+**Live hosting uses the existing GitHub → Cloudflare Pages pipeline**, not a new Worker.
+
+| Piece | Value |
+|-------|--------|
+| Pages project | `gokhan-memex` |
+| GitHub source | `avalidurl/gokhan-memex` |
+| Domain | `https://gokhanturhan.com` |
+| Mount | `public/ethereum-doomsday/` → `/ethereum-doomsday/` |
+| Tracker source of truth | `avalidurl/ethereum-doomsday-tracker` (this repo) |
+
+Sync built `dist/` into memex with `gokhan-memex/scripts/sync-ethereum-doomsday.sh`, then merge a memex PR so Pages auto-deploys on GitHub push. Do **not** create a separate Worker for this site (existing Pages project already serves the domain; Worker routes on the zone are unused for the apex).
+
+---
+
+
+## Appendix: Workers Static Assets prep (unused)
+
 # Deployment — Workers Static Assets (own repo → push-to-deploy)
 
 ## Goal
