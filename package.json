@@ -11,8 +11,10 @@
     "test:watch": "vitest",
     "lint": "oxlint",
     "typecheck": "tsc -b --pretty false",
-    "deploy:dry": "npm run build && wrangler deploy --dry-run",
-    "cf:types": "wrangler types"
+    "deploy:dry": "npm run build && node scripts/wrangler-dry-run.mjs",
+    "cf:types": "wrangler types",
+    "check:dist-map": "node scripts/check-dist-prefix-map.mjs",
+    "validate:worker": "npm run build && npm run check:dist-map && node scripts/wrangler-dry-run.mjs"
   },
   "dependencies": {
     "@fontsource/eb-garamond": "^5.3.0",
@@ -35,5 +37,8 @@
     "vite": "^8.3.6",
     "vitest": "^4.1.12",
     "wrangler": "^4.158.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

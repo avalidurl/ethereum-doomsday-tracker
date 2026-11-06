@@ -40,6 +40,16 @@ Combined with zone routes limited to:
 6. Push to `main` → automatic build/deploy.
 7. Verify: `curl -sI https://gokhanturhan.com/ethereum-doomsday/` → 200; `/` and art paths unchanged.
 
+## Node version (Workers Builds)
+
+Wrangler **4.158** requires **Node.js ≥ 22**. This repo sets:
+
+- `package.json` `"engines": { "node": ">=22" }`
+- `.nvmrc` / `.node-version` → `22`
+- Workers Builds → Environment variable **`NODE_VERSION=22`** (or select Node 22 in the build image)
+
+Local Vite preview may still run under Node 20 for UI review; use isolated Node 22 for `npm run deploy:dry` / `validate:worker` (see `scripts/wrangler-dry-run.mjs`).
+
 ## Tooling note
 
 Wrangler **4.158** requires **Node.js ≥ 22**. Local Vite/Vitest still run on Node 20; run `wrangler deploy --dry-run` / deploy from CI or a Node 22 environment.

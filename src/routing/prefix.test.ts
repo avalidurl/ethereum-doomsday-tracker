@@ -49,3 +49,19 @@ describe("SPA policy note", () => {
     expect(decideRoute(`${PUBLIC_PREFIX}/no-such-page`).kind).toBe("asset");
   });
 });
+
+describe("Vite base + assets.base_path contract", () => {
+  it("maps public hashed assets to dist/assets/* (no double prefix)", () => {
+    expect(publicPathToDistKey("/ethereum-doomsday/assets/index-abc.js")).toBe(
+      "assets/index-abc.js",
+    );
+    expect(publicPathToDistKey("/ethereum-doomsday/favicon.svg")).toBe("favicon.svg");
+  });
+
+  it("keeps query out of dist key mapping (routing preserves search separately)", () => {
+    const d = decideRoute("/ethereum-doomsday/assets/x.js", "?v=9");
+    expect(d.kind).toBe("asset");
+    if (d.kind === "asset") expect(d.search).toBe("?v=9");
+    expect(publicPathToDistKey("/ethereum-doomsday/assets/x.js")).toBe("assets/x.js");
+  });
+});

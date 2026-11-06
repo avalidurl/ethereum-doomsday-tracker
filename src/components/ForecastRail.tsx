@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   type ChartId,
   type ScenarioId,
@@ -11,13 +10,9 @@ import {
   SEED,
   pct,
 } from "../sim/model";
-import {
-  commitYearDraft,
-  isValidYearDraft,
-  yearDraftFromCommitted,
-} from "../routing/yearDraft";
 import { ForecastChart } from "./ForecastChart";
 import { Histogram } from "./Histogram";
+import { YearDraftInput } from "./YearDraftInput";
 
 type Props = {
   opts: SimOpts;
@@ -41,23 +36,6 @@ export function ForecastRail({
   onReset,
 }: Props) {
   const Y = opts.selectedYear;
-  const [yearDraft, setYearDraft] = useState(() => yearDraftFromCommitted(Y));
-  const [yearFocused, setYearFocused] = useState(false);
-
-  // Sync draft from slider/presets/reset only when not editing the field
-  useEffect(() => {
-    if (!yearFocused) setYearDraft(yearDraftFromCommitted(Y));
-  }, [Y, yearFocused]);
-
-  function commitYear() {
-    const next = commitYearDraft(yearDraft, Y);
-    setYearDraft(yearDraftFromCommitted(next));
-    if (next !== Y) onChange({ selectedYear: next });
-  }
-
-  function revertYear() {
-    setYearDraft(yearDraftFromCommitted(Y));
-  }
 
   return (
     <aside className="rail" aria-label="Forecast controls">
@@ -125,33 +103,7 @@ export function ForecastRail({
             aria-valuemax={YEAR_MAX}
             aria-valuenow={Y}
           />
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={yearDraft}
-            aria-label="Year numeric"
-            onFocus={() => setYearFocused(true)}
-            onChange={(e) => {
-              const raw = e.target.value;
-              if (isValidYearDraft(raw)) setYearDraft(raw.trim() === "" ? raw : raw.replace(/[^\d]/g, "").slice(0, 4));
-            }}
-            onBlur={() => {
-              setYearFocused(false);
-              commitYear();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                (e.target as HTMLInputElement).blur();
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                revertYear();
-                setYearFocused(false);
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-          />
+          <YearDraftInput year={Y} onCommit={(y) => onChange({ selectedYear: y })} />
         </div>
         <div className="seg">
           {[2030, 2035, 2040, 2050].map((y) => (
@@ -159,10 +111,7 @@ export function ForecastRail({
               key={y}
               type="button"
               className={Y === y ? "on" : ""}
-              onClick={() => {
-                setYearFocused(false);
-                onChange({ selectedYear: y });
-              }}
+              onClick={() => onChange({ selectedYear: y })}
             >
               {y}
             </button>
