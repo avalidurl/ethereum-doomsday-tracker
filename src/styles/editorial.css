@@ -10,7 +10,7 @@
   --accent: #8b0000;
   --accent-soft: rgba(139, 0, 0, 0.12);
   --col: 38rem;
-  --rail: 22rem;
+  --rail: 26rem;
   --gap: 2.75rem;
   --serif: "EB Garamond", Garamond, "Palatino Linotype", Palatino, Georgia, serif;
   --sans: "Source Sans 3", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -144,7 +144,7 @@ a:hover { color: var(--ink); }
 .chapter {
   position: relative;
   margin: 0 0 2.75rem;
-  scroll-margin-top: 1.5rem;
+  scroll-margin-top: 5.5rem;
 }
 .chapter .node {
   position: absolute;
@@ -411,3 +411,22 @@ table.data th { font-weight: 600; color: var(--mute); font-size: 0.78rem; text-t
   .essay { padding-left: 1.75rem; max-width: none; }
   .chapter .roman { display: none; }
 }
+
+.rail-group {
+  border-top: 1px solid var(--hair);
+  margin-top: 0.55rem;
+  padding-top: 0.15rem;
+}
+.rail-group > summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+  list-style: none;
+  padding: 0.45rem 0;
+}
+.rail-group > summary::-webkit-details-marker { display: none; }
+.rail-group > summary::after { content: " ▾"; color: var(--rule); }
+.rail-group:not([open]) > summary::after { content: " ▸"; }
+.chapter { scroll-margin-top: 5.5rem; }

@@ -46,3 +46,17 @@ Cloudflare connector auth may be required for project binding changes; this repo
 ## License
 
 Content and code: all rights reserved by the publisher unless otherwise noted. Fonts: SIL Open Font License via Fontsource.
+
+
+## Node
+
+- **Runtime for Wrangler / Workers Builds:** Node **≥22** (`engines` + `.nvmrc`).
+- UI `npm run build` / Vitest also fine on Node 22; Node 20 can still build the Vite app for local preview.
+- Local packaging check (no Cloudflare account): `npm run validate:worker` (uses `/workspace/.tools/node22` or `NODE22_BIN` when present).
+
+## Deployment (prepared)
+
+See [DEPLOY.md](./DEPLOY.md). Repo includes `wrangler.jsonc` + `worker/index.ts` for
+Cloudflare Workers Static Assets under `gokhanturhan.com/ethereum-doomsday/` with
+`assets.base_path`. **Not deployed yet** — Cloudflare auth pending. Use Workers Builds
+(GitHub) once authorized; do not broaden zone routes beyond the prefix.

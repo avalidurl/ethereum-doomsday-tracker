@@ -9,10 +9,10 @@ import {
   N_DRAWS,
   SEED,
   pct,
-  clamp,
 } from "../sim/model";
 import { ForecastChart } from "./ForecastChart";
 import { Histogram } from "./Histogram";
+import { YearDraftInput } from "./YearDraftInput";
 
 type Props = {
   opts: SimOpts;
@@ -36,6 +36,7 @@ export function ForecastRail({
   onReset,
 }: Props) {
   const Y = opts.selectedYear;
+
   return (
     <aside className="rail" aria-label="Forecast controls">
       <div className="rail-label">Illustrative forecast rail</div>
@@ -102,21 +103,16 @@ export function ForecastRail({
             aria-valuemax={YEAR_MAX}
             aria-valuenow={Y}
           />
-          <input
-            type="number"
-            min={YEAR_MIN}
-            max={YEAR_MAX}
-            value={Y}
-            onChange={(e) => {
-              const n = Number(e.target.value);
-              if (Number.isFinite(n)) onChange({ selectedYear: clamp(Math.round(n), YEAR_MIN, YEAR_MAX) });
-            }}
-            aria-label="Year numeric"
-          />
+          <YearDraftInput year={Y} onCommit={(y) => onChange({ selectedYear: y })} />
         </div>
         <div className="seg">
           {[2030, 2035, 2040, 2050].map((y) => (
-            <button key={y} type="button" className={Y === y ? "on" : ""} onClick={() => onChange({ selectedYear: y })}>
+            <button
+              key={y}
+              type="button"
+              className={Y === y ? "on" : ""}
+              onClick={() => onChange({ selectedYear: y })}
+            >
               {y}
             </button>
           ))}
@@ -149,8 +145,8 @@ export function ForecastRail({
         <p className="rail-note">Prior-driven parameter quantiles — not a confidence interval.</p>
       </div>
 
-      <div className="ctrl">
-        <label>Hazard layers</label>
+      <details className="rail-group" open>
+        <summary>Layers & outcomes</summary>
         <div className="toggle-row">
           <span>Quantum signature / keys</span>
           <input type="checkbox" checked={opts.quantumOn} onChange={(e) => onChange({ quantumOn: e.target.checked })} />
@@ -163,10 +159,6 @@ export function ForecastRail({
           <span>App / DeFi (excluded)</span>
           <input type="checkbox" checked={false} disabled readOnly />
         </div>
-      </div>
-
-      <div className="ctrl">
-        <label>Outcome aggregation</label>
         <div className="toggle-row">
           <span>Theft path</span>
           <input type="checkbox" checked={opts.theft} onChange={(e) => onChange({ theft: e.target.checked })} />
@@ -179,69 +171,74 @@ export function ForecastRail({
           <span>Outage ≥72h</span>
           <input type="checkbox" checked={opts.outage} onChange={(e) => onChange({ outage: e.target.checked })} />
         </div>
-      </div>
+      </details>
 
-      {(
-        [
-          ["qMu", "Q median year", 2028, 2055, 1, opts.qMu, (v: number) => ({ qMu: v })],
-          ["qSig", "Q spread σ (y)", 0.5, 12, 0.5, opts.qSig, (v: number) => ({ qSig: v })],
-          ["mMu", "Migration median", 2027, 2050, 1, opts.mMu, (v: number) => ({ mMu: v })],
-          ["mSig", "Migration σ (y)", 0.5, 10, 0.5, opts.mSig, (v: number) => ({ mSig: v })],
-          ["exploit", "Exploit hazard %/y", 0, 25, 0.5, opts.exploitH * 100, (v: number) => ({ exploitH: v / 100 })],
-          ["resid", "Residual exposure %", 1, 60, 1, opts.residual * 100, (v: number) => ({ residual: v / 100 })],
-          ["client", "Client hazard %/y", 0, 3, 0.05, opts.clientH * 100, (v: number) => ({ clientH: v / 100 })],
-        ] as const
-      ).map(([id, lab, min, max, step, val, patch]) => (
-        <div className="ctrl" key={id}>
-          <label htmlFor={id}>
-            {lab}: {typeof val === "number" ? (Number.isInteger(step) ? val.toFixed(0) : val.toFixed(2)) : val}
-          </label>
-          <input
-            id={id}
-            type="range"
-            min={min}
-            max={max}
-            step={step}
-            value={val}
-            onChange={(e) => onChange(patch(Number(e.target.value)))}
-          />
-        </div>
-      ))}
+      <details className="rail-group" open>
+        <summary>Prior assumptions</summary>
+        {(
+          [
+            ["qMu", "Q median year", 2028, 2055, 1, opts.qMu, (v: number) => ({ qMu: v })],
+            ["qSig", "Q spread σ (y)", 0.5, 12, 0.5, opts.qSig, (v: number) => ({ qSig: v })],
+            ["mMu", "Migration median", 2027, 2050, 1, opts.mMu, (v: number) => ({ mMu: v })],
+            ["mSig", "Migration σ (y)", 0.5, 10, 0.5, opts.mSig, (v: number) => ({ mSig: v })],
+            ["exploit", "Exploit hazard %/y", 0, 25, 0.5, opts.exploitH * 100, (v: number) => ({ exploitH: v / 100 })],
+            ["resid", "Residual exposure %", 1, 60, 1, opts.residual * 100, (v: number) => ({ residual: v / 100 })],
+            ["client", "Client hazard %/y", 0, 3, 0.05, opts.clientH * 100, (v: number) => ({ clientH: v / 100 })],
+          ] as const
+        ).map(([id, lab, min, max, step, val, patch]) => (
+          <div className="ctrl" key={id}>
+            <label htmlFor={id}>
+              {lab}: {typeof val === "number" ? (Number.isInteger(step) ? val.toFixed(0) : val.toFixed(2)) : val}
+            </label>
+            <input
+              id={id}
+              type="range"
+              min={min}
+              max={max}
+              step={step}
+              value={val}
+              onChange={(e) => onChange(patch(Number(e.target.value)))}
+            />
+          </div>
+        ))}
+      </details>
 
-      <button type="button" className="btn" onClick={onReset}>
+      <button type="button" className="btn" onClick={onReset} style={{ marginTop: "0.75rem" }}>
         Reset defaults
       </button>
 
-      <div className="ctrl">
-        <label>P histogram at {Y}</label>
-        <Histogram sim={sim} />
-      </div>
-
-      <div className="ctrl">
-        <label>Sensitivity (Δ median P)</label>
-        {sim.sensitivity.map((s) => {
-          const mag = Math.min(1, Math.abs(s.delta) / 0.08);
-          const pos = s.delta >= 0;
-          return (
-            <div className="sens-bar" key={s.label}>
-              <span className="lab">{s.label}</span>
-              <span className="track">
-                <span
-                  className="fill"
-                  style={{
-                    left: pos ? "50%" : `${50 - mag * 50}%`,
-                    width: `${mag * 50}%`,
-                  }}
-                />
-              </span>
-              <span className="num">
-                {s.delta >= 0 ? "+" : ""}
-                {pct(s.delta)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <details className="rail-group">
+        <summary>Distribution & sensitivity</summary>
+        <div className="ctrl">
+          <label>P histogram at {Y}</label>
+          <Histogram sim={sim} />
+        </div>
+        <div className="ctrl">
+          <label>Sensitivity (Δ median P)</label>
+          {sim.sensitivity.map((s) => {
+            const mag = Math.min(1, Math.abs(s.delta) / 0.08);
+            const pos = s.delta >= 0;
+            return (
+              <div className="sens-bar" key={s.label}>
+                <span className="lab">{s.label}</span>
+                <span className="track">
+                  <span
+                    className="fill"
+                    style={{
+                      left: pos ? "50%" : `${50 - mag * 50}%`,
+                      width: `${mag * 50}%`,
+                    }}
+                  />
+                </span>
+                <span className="num">
+                  {s.delta >= 0 ? "+" : ""}
+                  {pct(s.delta)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </details>
 
       <p className="rail-note">
         Synthetic priors only. Bands are model-spread intervals, not calibrated CIs. Disabled hazards contribute exactly

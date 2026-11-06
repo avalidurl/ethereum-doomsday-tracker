@@ -6,7 +6,7 @@ export default defineConfig({
   base: "/ethereum-doomsday/",
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
   preview: {
     host: "0.0.0.0",
