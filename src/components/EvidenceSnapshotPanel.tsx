@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { EVIDENCE_SNAPSHOT } from "../data/evidenceSnapshot";
+import { EVIDENCE_SNAPSHOT, sourceDisplayTitle } from "../data/evidenceSnapshot";
 
 /**
  * Public cached evidence snapshot.
@@ -29,9 +29,8 @@ export function EvidenceSnapshotPanel() {
           aria-label="Cached evidence snapshot"
         >
           <p className="snapshot-kicker">
-            Static publication snapshot · v{snap.publicationVersion} · Publication snapshot date:{" "}
-            {snap.publicationDate} ({snap.timezoneNote}) — not a live scrape, not “checked today”, no checked-at
-            claim. Until a reviewed update is published, this shows the current source list (not fresh findings).
+            Cached summary · publication v{snap.publicationVersion} · {snap.publicationDate} ({snap.timezoneNote}).
+            Not a live feed.
           </p>
           <ul className="snapshot-semantics">
             {snap.semantics.map((line) => (
@@ -40,15 +39,11 @@ export function EvidenceSnapshotPanel() {
           </ul>
           <p className="snapshot-note">{snap.weeklyReviewNote}</p>
           <p className="snapshot-note">{snap.modelUnchangedNote}</p>
-          <p className="snapshot-note">
-            Serving this cached record uses ordinary page traffic only. It does not start paid AI research or change
-            the forecast.
-          </p>
           <table className="data snapshot-table">
             <thead>
               <tr>
                 <th scope="col">Source</th>
-                <th scope="col">Status</th>
+                <th scope="col">Coverage</th>
               </tr>
             </thead>
             <tbody>
@@ -56,17 +51,16 @@ export function EvidenceSnapshotPanel() {
                 <tr key={s.id}>
                   <td>
                     <a href={s.url} rel="noopener noreferrer">
-                      {s.title}
-                      {"listedDate" in s && s.listedDate ? ` (${s.listedDate})` : ""}
+                      {sourceDisplayTitle(s)}
                     </a>
                   </td>
-                  <td>{s.status}</td>
+                  <td>{s.statusLabel}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <p className="snapshot-foot">
-            Full bibliography: <a href="#sources">Sources</a> · methods: <a href="#methods">Methods</a>
+            Full list: <a href="#sources">Sources</a> · methods: <a href="#methods">Methods</a>
           </p>
         </aside>
       )}

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EVIDENCE_SNAPSHOT, snapshotHasNoRemoteActions } from "./evidenceSnapshot";
+import {
+  EVIDENCE_SNAPSHOT,
+  SOURCE_COVERAGE,
+  snapshotHasNoRemoteActions,
+} from "./evidenceSnapshot";
 
 describe("EVIDENCE_SNAPSHOT checked-in record", () => {
   it("is a static publication snapshot with publication version/date (not scrape-now)", () => {
@@ -7,17 +11,29 @@ describe("EVIDENCE_SNAPSHOT checked-in record", () => {
     expect(EVIDENCE_SNAPSHOT.publicationVersion).toMatch(/^\d+\.\d+\.\d+$/);
     expect(EVIDENCE_SNAPSHOT.publicationDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(EVIDENCE_SNAPSHOT.title.toLowerCase()).toContain("cached");
-    expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /does not run research/i.test(s))).toBe(true);
+    expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /does not fetch/i.test(s))).toBe(true);
   });
 
-  it("lists the known primary citations without inventing scrape timestamps", () => {
-    expect(EVIDENCE_SNAPSHOT.sources.length).toBeGreaterThanOrEqual(8);
-    for (const s of EVIDENCE_SNAPSHOT.sources) {
+  it("shares one authoritative SOURCE_COVERAGE list with honest full/partial scopes", () => {
+    expect(EVIDENCE_SNAPSHOT.sources).toBe(SOURCE_COVERAGE);
+    expect(SOURCE_COVERAGE.length).toBe(8);
+    const full = SOURCE_COVERAGE.filter((s) => s.coverage === "full");
+    const partial = SOURCE_COVERAGE.filter((s) => s.coverage === "partial");
+    expect(full.map((s) => s.id).sort()).toEqual(
+      ["causis", "ef-pq", "evmbench", "google-ecdlp", "gri-2025", "scone"].sort(),
+    );
+    expect(partial.map((s) => s.id).sort()).toEqual(["hive", "metaculus-rsa"].sort());
+    for (const s of SOURCE_COVERAGE) {
       expect(s.url.startsWith("https://")).toBe(true);
-      expect(s.status.startsWith("reference") || s.status.includes("dossier")).toBe(true);
+      expect(s.statusLabel.toLowerCase()).toContain("reviewed offline");
+      expect(s.executedHere).toBe(false);
+      expect(s.statusLabel.toLowerCase()).not.toContain("not ingested");
+      expect(s.statusLabel.toLowerCase()).not.toContain("dossier digested");
       expect(Object.keys(s)).not.toContain("scrapedAt");
       expect(Object.keys(s)).not.toContain("checkedAt");
     }
+    expect(SOURCE_COVERAGE.find((s) => s.id === "evmbench")!.statusLabel).toMatch(/benchmark not run/i);
+    expect(SOURCE_COVERAGE.find((s) => s.id === "hive")!.statusLabel).toMatch(/partial/i);
   });
 
   it("snapshotHasNoRemoteActions stays true for the checked-in object", () => {
@@ -35,7 +51,7 @@ describe("no network side effects on module load", () => {
     vi.stubGlobal("fetch", fetchSpy);
     vi.resetModules();
     const mod = await import("./evidenceSnapshot");
-    expect(mod.EVIDENCE_SNAPSHOT.sources.length).toBeGreaterThan(0);
+    expect(mod.SOURCE_COVERAGE.length).toBe(8);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

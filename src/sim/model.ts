@@ -18,7 +18,7 @@ import { evaluateCalibration, type CalibrationStatus } from "./calibration";
 import { frechetUnionBounds } from "./frechet";
 import { sampleYearFromKnots, shiftKnots, type Knot } from "./knots";
 
-export const PAGE_VERSION = "0.3.0";
+export const PAGE_VERSION = "0.3.1";
 export const PAGE_UPDATED = "2026-11-06";
 export const ANCHOR_DATE = "2026-11-06";
 export const MODEL_VERSION = REGISTRY_VERSION;

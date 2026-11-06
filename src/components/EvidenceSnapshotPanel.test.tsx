@@ -21,13 +21,13 @@ describe("EvidenceSnapshotPanel", () => {
     fireEvent.click(btn);
     expect(btn.getAttribute("aria-expanded")).toBe("true");
     const region = screen.getByRole("region", { name: /cached evidence snapshot/i });
-    expect(region.textContent).toMatch(/static publication snapshot/i);
-    expect(region.textContent).toMatch(/Publication snapshot date:/i);
-    expect(region.textContent).toMatch(/current source list/i);
-    expect(region.textContent).toMatch(/does not start paid AI research/i);
-    expect(region.textContent).toMatch(/not a live scrape/i);
-    expect(region.textContent).not.toMatch(/check for updates/i);
+    expect(region.textContent).toMatch(/Cached summary/i);
+    expect(region.textContent).toMatch(/Not a live feed/i);
+    expect(region.textContent).toMatch(/does not fetch/i);
+    expect(region.textContent).not.toMatch(/checked-at/i);
+    expect(region.textContent).not.toMatch(/not ingested/i);
     expect(screen.getByText(/OpenAI EVMbench/)).toBeTruthy();
+    expect(region.textContent).toMatch(/Reviewed offline · full \(blog \+ PDF\)/);
     expect(fetchSpy).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: /hide evidence snapshot/i }));
