@@ -22,6 +22,8 @@ describe("EvidenceSnapshotPanel", () => {
     expect(btn.getAttribute("aria-expanded")).toBe("true");
     const region = screen.getByRole("region", { name: /cached evidence snapshot/i });
     expect(region.textContent).toMatch(/static publication snapshot/i);
+    expect(region.textContent).toMatch(/Publication snapshot date:/i);
+    expect(region.textContent).toMatch(/current source list/i);
     expect(region.textContent).toMatch(/does not start paid AI research/i);
     expect(region.textContent).toMatch(/not a live scrape/i);
     expect(region.textContent).not.toMatch(/check for updates/i);
