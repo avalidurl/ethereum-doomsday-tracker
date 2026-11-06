@@ -14,12 +14,17 @@ export function ForecastChart({ sim, chart, year, showBand }: Props) {
   const pad = { t: 18, r: 8, b: 18, l: 32 };
   const series =
     chart === "annual"
-      ? { med: sim.annMed, low: sim.annLow, high: sim.annHigh }
+      ? { primary: sim.annMean, low: sim.annLow, high: sim.annHigh }
       : chart === "survival"
-        ? { med: sim.survMed, low: sim.survLow, high: sim.survHigh }
-        : { med: sim.cumMed, low: sim.cumLow, high: sim.cumHigh };
+        ? { primary: sim.survMean, low: sim.survLow, high: sim.survHigh }
+        : { primary: sim.cumMean, low: sim.cumLow, high: sim.cumHigh };
 
-  const vals = [...series.med, ...(showBand ? [...series.low, ...series.high] : [])];
+  // Axis must encompass primary mean even when epistemic band is flat near 0
+  const vals = [
+    ...series.primary,
+    ...(showBand ? [...series.low, ...series.high] : []),
+    ...(chart === "cumulative" ? [sim.scenarioMean] : []),
+  ];
   const ymax = chartYMax(chart, vals);
   const ticks = chartTickFractions(ymax);
   const n = sim.years.length;
@@ -31,7 +36,7 @@ export function ForecastChart({ sim, chart, year, showBand }: Props) {
   const yi = Math.max(0, sim.years.indexOf(year));
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${chart} forecast chart`}>
+    <svg viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${chart} forecast chart (scenario mean)`}>
       {ticks.map((v, idx) => {
         const yy = y(v);
         return (
@@ -64,9 +69,9 @@ export function ForecastChart({ sim, chart, year, showBand }: Props) {
           <path d={path(series.high)} fill="none" stroke="#1a1714" strokeWidth={1} strokeDasharray="2 2" opacity={0.55} />
         </>
       )}
-      <path d={path(series.med)} fill="none" stroke="#8b0000" strokeWidth={1.6} strokeDasharray="1.5 2.5" />
+      <path d={path(series.primary)} fill="none" stroke="#8b0000" strokeWidth={1.8} />
       <line x1={x(yi)} x2={x(yi)} y1={pad.t} y2={h - pad.b} stroke="#8b0000" strokeWidth={1} />
-      <circle cx={x(yi)} cy={y(series.med[yi]!)} r={3} fill="#8b0000" />
+      <circle cx={x(yi)} cy={y(series.primary[yi]!)} r={3} fill="#8b0000" />
     </svg>
   );
 }

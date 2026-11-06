@@ -8,6 +8,9 @@ import {
   YEAR_MIN,
   N_DRAWS,
   SEED,
+  PAGE_VERSION,
+  METACULUS_RSA_SOURCE_CENTER,
+  effectiveQCenter,
   pct,
 } from "../sim/model";
 import { ForecastChart } from "./ForecastChart";
@@ -39,7 +42,7 @@ export function ForecastRail({
 
   return (
     <aside className="rail" aria-label="Forecast controls">
-      <div className="rail-label">Scenario forecast rail (v0.3)</div>
+      <div className="rail-label">{`Scenario forecast rail (v${PAGE_VERSION})`}</div>
       <div className="stat-strip">
         <div className="stat">
           <div className="v danger">{pct(sim.scenarioMean)}</div>
@@ -91,7 +94,7 @@ export function ForecastRail({
           + spread band
         </button>
         <button type="button" className={!showBand ? "on" : ""} onClick={() => setShowBand(false)}>
-          median only
+          mean only
         </button>
       </div>
 
@@ -205,7 +208,7 @@ export function ForecastRail({
                   onChange({
                     timelineMode: "rsa_proxy",
                     qMuOverride: false,
-                    qMu: 2033.68,
+                    qMu: METACULUS_RSA_SOURCE_CENTER,
                   });
                 } else {
                   onChange({ timelineMode: "eth_assumption", qMuOverride: false, qMu: 2038 });
@@ -217,16 +220,60 @@ export function ForecastRail({
           ))}
         </div>
         <p className="rail-note">
-          RSA proxy uses Metaculus 30596 knots <strong>unshifted</strong> (source center ≈2033.7) unless you enable an
-          explicit override. Not identification with Ethereum L1 failure. GRI RSA % not ported.
+          RSA proxy uses Metaculus 30596 knots <strong>unshifted</strong> (cited source center{" "}
+          {METACULUS_RSA_SOURCE_CENTER.toFixed(2)}) unless you enable an explicit Q-center override. Not identification
+          with Ethereum L1 failure. GRI RSA % not ported.
         </p>
       </details>
 
       <details className="rail-group" open>
         <summary>Prior assumptions</summary>
+        {(() => {
+          const qEff = effectiveQCenter(opts);
+          const rsa = opts.timelineMode === "rsa_proxy";
+          const usingSource = rsa && !opts.qMuOverride;
+          const rsaOverride = rsa && opts.qMuOverride;
+          return (
+            <div className="ctrl" key="qMu">
+              <label htmlFor="qMu">
+                Q center year: {qEff.toFixed(2)}
+                {usingSource
+                  ? ` (cited source ${METACULUS_RSA_SOURCE_CENTER.toFixed(2)})`
+                  : rsaOverride
+                    ? ` (user override; cited source ${METACULUS_RSA_SOURCE_CENTER.toFixed(2)})`
+                    : ""}
+              </label>
+              <input
+                id="qMu"
+                type="range"
+                min={2028}
+                max={2055}
+                step={0.01}
+                value={qEff}
+                onChange={(e) =>
+                  onChange({ qMu: Number(e.target.value), qMuOverride: true })
+                }
+              />
+              {rsaOverride && (
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ marginTop: "0.35rem" }}
+                  onClick={() =>
+                    onChange({
+                      qMu: METACULUS_RSA_SOURCE_CENTER,
+                      qMuOverride: false,
+                    })
+                  }
+                >
+                  Reset Q center to source ({METACULUS_RSA_SOURCE_CENTER.toFixed(2)})
+                </button>
+              )}
+            </div>
+          );
+        })()}
         {(
           [
-            ["qMu", "Q center year", 2028, 2055, 1, opts.qMu, (v: number) => ({ qMu: v, qMuOverride: true })],
             ["qW", "Q knot width ×", 0.25, 3, 0.05, opts.qWidth, (v: number) => ({ qWidth: v })],
             ["mMu", "Migration center", 2027, 2050, 1, opts.mMu, (v: number) => ({ mMu: v })],
             ["mW", "M knot width ×", 0.25, 3, 0.05, opts.mWidth, (v: number) => ({ mWidth: v })],

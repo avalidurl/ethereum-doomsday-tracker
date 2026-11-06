@@ -128,7 +128,7 @@ export default function App() {
         </p>
         <p className="byline">Original risk publication</p>
         <p className="date">Web edition, November 6, 2026</p>
-        <div className="disclaimer-pill">v0.3.2 scenario mean · Fréchet on mean marginals · calibration pending</div>
+        <div className="disclaimer-pill">{`v${PAGE_VERSION} scenario mean · Fréchet on mean marginals · calibration pending`}</div>
         <EvidenceSnapshotPanel />
       </header>
 

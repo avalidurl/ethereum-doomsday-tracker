@@ -15,12 +15,15 @@ import {
   clamp,
   mean,
   metaculusRsaMedianYear,
+  METACULUS_RSA_SOURCE_CENTER,
+  effectiveQCenter,
   quantile,
   runSim,
   YEAR_MAX,
   YEAR_MIN,
 } from "./model";
 import { METACULUS_RSA_KNOTS, PRIOR_REGISTRY } from "../data/priorRegistry";
+import { chartYMax } from "../routing/chartScale";
 import { mulberry32 } from "./model";
 
 describe("runSim invariants", () => {
@@ -290,5 +293,145 @@ describe("registry", () => {
     expect(quantile([0, 1, 2, 3, 4], 0.5)).toBe(2);
     expect(mean([1, 2, 3])).toBe(2);
     validateKnots(METACULUS_RSA_KNOTS);
+  });
+});
+
+describe("v0.3.3 chart mean trajectories", () => {
+  it("selectedYear cumMean matches scenarioMean; annual sums and survival=1-cum", () => {
+    for (const opts of [
+      { ...DEFAULT_OPTS, selectedYear: 2035 },
+      { ...DEFAULT_OPTS, selectedYear: 2035, scenario: "q_accel" as const },
+      {
+        ...DEFAULT_OPTS,
+        selectedYear: 2035,
+        timelineMode: "rsa_proxy" as const,
+        qMuOverride: false,
+        qMu: 2038,
+      },
+      {
+        ...DEFAULT_OPTS,
+        selectedYear: 2040,
+        conflict: false,
+        outage: false,
+        theft: true,
+        quantumOn: true,
+      },
+    ]) {
+      const s = runSim(opts);
+      const yi = s.years.indexOf(opts.selectedYear);
+      expect(yi).toBeGreaterThanOrEqual(0);
+      expect(s.cumMean[yi]!).toBeCloseTo(s.scenarioMean, 10);
+      // survival mean = 1 - cumulative mean (same draws)
+      expect(s.survMean[yi]!).toBeCloseTo(1 - s.cumMean[yi]!, 10);
+      // annual masses sum to cumMean at that year
+      const annSum = s.annMean.slice(0, yi + 1).reduce((a, b) => a + b, 0);
+      expect(annSum).toBeCloseTo(s.cumMean[yi]!, 8);
+      // nondecreasing cumMean
+      for (let i = 0; i < s.cumMean.length - 1; i++) {
+        expect(s.cumMean[i]!).toBeLessThanOrEqual(s.cumMean[i + 1]! + 1e-12);
+      }
+    }
+  });
+
+  it("quantum-only 50% band can be flat near 0 while mean stays positive and chart ymax includes mean", () => {
+    const s = runSim({
+      ...DEFAULT_OPTS,
+      selectedYear: 2035,
+      scenario: "q_accel",
+      spread: "50",
+      conflict: false,
+      outage: false,
+      clientOn: false,
+      theft: true,
+      quantumOn: true,
+    });
+    expect(s.scenarioMean).toBeGreaterThan(0);
+    const yi = s.years.indexOf(2035);
+    expect(s.cumMean[yi]!).toBeCloseTo(s.scenarioMean, 10);
+    // Often p25≈0 for skewed theft; mean can exceed high band edge or sit above median
+    expect(s.cumMean[yi]!).toBeGreaterThan(s.cumMed[yi]! - 1e-12);
+    // emulate ForecastChart vals for cumulative with band
+    const vals = [...s.cumMean, ...s.cumLow, ...s.cumHigh, s.scenarioMean];
+    const ymax = chartYMax("cumulative", vals);
+    expect(ymax).toBeGreaterThanOrEqual(s.scenarioMean);
+  });
+
+  it(
+    "random option grid: year-dot cumMean equals headline",
+    () => {
+    const rnd = mulberry32(2026);
+    for (let i = 0; i < 12; i++) {
+      const opts = {
+        ...DEFAULT_OPTS,
+        selectedYear: 2028 + Math.floor(rnd() * 25),
+        theft: rnd() > 0.2,
+        conflict: rnd() > 0.4,
+        outage: rnd() > 0.4,
+        quantumOn: rnd() > 0.15,
+        clientOn: rnd() > 0.15,
+        scenario: (["orderly", "q_accel", "delayed", "client"] as const)[Math.floor(rnd() * 4)]!,
+        spread: (["50", "80", "95"] as const)[Math.floor(rnd() * 3)]!,
+        timelineMode: rnd() > 0.5 ? ("eth_assumption" as const) : ("rsa_proxy" as const),
+        qMuOverride: rnd() > 0.7,
+        qMu: 2030 + rnd() * 20,
+      };
+      const s = runSim(opts);
+      const yi = s.years.indexOf(opts.selectedYear);
+      expect(s.cumMean[yi]!).toBeCloseTo(s.scenarioMean, 10);
+      expect(s.survMean[yi]!).toBeCloseTo(1 - s.cumMean[yi]!, 10);
+    }
+  },
+    30000,
+  );
+});
+
+describe("v0.3.3 effective Q center / RSA sensitivity", () => {
+  it("exposes cited source center ≈2033.68 and effectiveQCenter for rsa without override", () => {
+    expect(METACULUS_RSA_SOURCE_CENTER).toBeCloseTo(2033.68, 1);
+    expect(effectiveQCenter({
+      timelineMode: "rsa_proxy",
+      qMu: 2038,
+      qMuOverride: false,
+      qWidth: 1,
+      scenario: "orderly",
+    })).toBe(METACULUS_RSA_SOURCE_CENTER);
+    expect(effectiveQCenter({
+      timelineMode: "rsa_proxy",
+      qMu: 2035,
+      qMuOverride: true,
+      qWidth: 1,
+      scenario: "orderly",
+    })).toBe(2035);
+    expect(effectiveQCenter({
+      timelineMode: "eth_assumption",
+      qMu: 2038,
+      qMuOverride: false,
+      qWidth: 1,
+      scenario: "orderly",
+    })).toBe(2038);
+  });
+
+  it("rsa_proxy URL-like opts: Q center −3y raises risk (earlier) vs base", () => {
+    const baseOpts = {
+      ...DEFAULT_OPTS,
+      timelineMode: "rsa_proxy" as const,
+      qMuOverride: false,
+      qMu: 2038, // ignored until override — source center active
+      selectedYear: 2035,
+    };
+    const s = runSim(baseOpts);
+    expect(effectiveQCenter(baseOpts)).toBeCloseTo(METACULUS_RSA_SOURCE_CENTER, 5);
+    const row = s.sensitivity.find((x) => x.label === "Q center −3y");
+    expect(row).toBeDefined();
+    // shifting active center earlier must increase near-term risk
+    expect(row!.delta).toBeGreaterThan(0);
+    const plus = s.sensitivity.find((x) => x.label === "Q center +3y");
+    expect(plus!.delta).toBeLessThan(0);
+  });
+
+  it("source-center range step 0.01 can represent cited center exactly", () => {
+    const step = 0.01;
+    const snapped = Math.round(METACULUS_RSA_SOURCE_CENTER / step) * step;
+    expect(Math.abs(snapped - METACULUS_RSA_SOURCE_CENTER)).toBeLessThan(1e-9);
   });
 });
