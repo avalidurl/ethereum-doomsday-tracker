@@ -4,6 +4,7 @@ import {
   type SimOpts,
   type SimResult,
   type SpreadId,
+  type TimelineMode,
   YEAR_MAX,
   YEAR_MIN,
   N_DRAWS,
@@ -39,27 +40,33 @@ export function ForecastRail({
 
   return (
     <aside className="rail" aria-label="Forecast controls">
-      <div className="rail-label">Illustrative forecast rail</div>
+      <div className="rail-label">Scenario forecast rail (v0.3)</div>
       <div className="stat-strip">
         <div className="stat">
           <div className="v danger">{pct(sim.median)}</div>
-          <div className="l">Yes by end-{Y}</div>
+          <div className="l">Scenario Yes by end-{Y}</div>
         </div>
         <div className="stat">
           <div className="v">{pct(1 - sim.median)}</div>
-          <div className="l">No (complement)</div>
+          <div className="l">Scenario No</div>
+        </div>
+        <div className="stat">
+          <div className="v">
+            {pct(sim.frechetLow)}–{pct(sim.frechetHigh)}
+          </div>
+          <div className="l">Fréchet union bounds</div>
         </div>
         <div className="stat">
           <div className="v">
             {pct(sim.low)}–{pct(sim.high)}
           </div>
-          <div className="l">{opts.spread}% model spread</div>
-        </div>
-        <div className="stat">
-          <div className="v">{N_DRAWS}</div>
-          <div className="l">draws · seed {SEED}</div>
+          <div className="l">{opts.spread}% epistemic spread</div>
         </div>
       </div>
+      <p className="rail-note" style={{ marginTop: 0 }}>
+        Scenario P uses competing-risk composition (no double-count). Fréchet bounds are identification limits from
+        leaf marginals only — not a calibrated correlation. Draws {N_DRAWS} · seed {SEED}.
+      </p>
 
       <div className="chart-frame">
         <span className="year-chip">{Y}</span>
@@ -160,17 +167,42 @@ export function ForecastRail({
           <input type="checkbox" checked={false} disabled readOnly />
         </div>
         <div className="toggle-row">
-          <span>Theft path</span>
+          <span>Leaf: quantum theft</span>
           <input type="checkbox" checked={opts.theft} onChange={(e) => onChange({ theft: e.target.checked })} />
         </div>
         <div className="toggle-row">
-          <span>Conflict path</span>
+          <span>Leaf: finality conflict</span>
           <input type="checkbox" checked={opts.conflict} onChange={(e) => onChange({ conflict: e.target.checked })} />
         </div>
         <div className="toggle-row">
-          <span>Outage ≥72h</span>
+          <span>Leaf: outage ≥72h</span>
           <input type="checkbox" checked={opts.outage} onChange={(e) => onChange({ outage: e.target.checked })} />
         </div>
+      </details>
+
+      <details className="rail-group" open>
+        <summary>Capability timeline source</summary>
+        <div className="seg" role="group" aria-label="Timeline mode">
+          {(
+            [
+              ["eth_assumption", "ETH ECDLP assumption"],
+              ["rsa_proxy", "RSA Metaculus proxy"],
+            ] as const
+          ).map(([id, lab]) => (
+            <button
+              key={id}
+              type="button"
+              className={opts.timelineMode === id ? "on" : ""}
+              onClick={() => onChange({ timelineMode: id as TimelineMode })}
+            >
+              {lab}
+            </button>
+          ))}
+        </div>
+        <p className="rail-note">
+          RSA proxy uses Metaculus 30596 shape as a related CRQC-era scenario — not identification of Ethereum failure
+          with RSA-2048 factorization. GRI RSA % bands are not ported into L1 odds.
+        </p>
       </details>
 
       <details className="rail-group" open>
@@ -240,9 +272,17 @@ export function ForecastRail({
         </div>
       </details>
 
+      <div className="ctrl">
+        <label>Leaf marginals @ {Y}</label>
+        <p className="rail-note">
+          theft {pct(sim.leafMarginals.theft)} · conflict {pct(sim.leafMarginals.conflict)} · outage{" "}
+          {pct(sim.leafMarginals.outage)}
+        </p>
+      </div>
+      <p className="rail-note">{sim.readout}</p>
       <p className="rail-note">
-        Synthetic priors only. Bands are model-spread intervals, not calibrated CIs. Disabled hazards contribute exactly
-        zero.
+        Calibration: {sim.calibration.status === "pending_insufficient_resolved" ? "pending / insufficient resolved observations" : "scored"}.
+        Disabled leaves contribute exactly zero.
       </p>
     </aside>
   );

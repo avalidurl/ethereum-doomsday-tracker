@@ -45,6 +45,8 @@ function parseQuery(): Partial<SimOpts> & { chart?: ChartId; band?: boolean } {
   if (sp.get("q") === "1") out.quantumOn = true;
   if (sp.get("c") === "0") out.clientOn = false;
   if (sp.get("c") === "1") out.clientOn = true;
+  const tm = sp.get("tm");
+  if (tm === "eth_assumption" || tm === "rsa_proxy") out.timelineMode = tm;
   return out;
 }
 
@@ -64,6 +66,7 @@ function writeQuery(opts: SimOpts, chart: ChartId, showBand: boolean) {
   sp.set("cl", String(Math.round(opts.clientH * 10000) / 100));
   sp.set("q", opts.quantumOn ? "1" : "0");
   sp.set("c", opts.clientOn ? "1" : "0");
+  sp.set("tm", opts.timelineMode);
   const next = sp.toString();
   const cur = window.location.search.replace(/^\?/, "");
   if (cur !== next) {
@@ -106,13 +109,13 @@ export default function App() {
         <span className="lead-word">an</span>
         <h1>Ethereum Doomsday Tracker</h1>
         <p className="deck">
-          ILLUSTRATIVE L1 SYSTEMIC-SECURITY FORECAST ·{" "}
-          <em>Parameter-spread bands</em> · CONDITIONAL SCENARIOS · REFERENCE-ONLY
-          BENCHMARKS
+          L1 SYSTEMIC-SECURITY SCENARIO MODEL ·{" "}
+          <em>Fréchet identification bounds</em> · EVIDENCE-LINKED PRIORS · CALIBRATION
+          PENDING
         </p>
         <p className="byline">Original risk publication</p>
         <p className="date">Web edition, November 6, 2026</p>
-        <div className="disclaimer-pill">Synthetic priors · not calibrated odds</div>
+        <div className="disclaimer-pill">v0.3 scenario model · Fréchet bounds · calibration pending</div>
         <EvidenceSnapshotPanel />
       </header>
 
@@ -144,7 +147,7 @@ export default function App() {
         {" · "}
         <a href="#methods">Methods</a>
         {" · "}
-        Synthetic priors · not calibrated odds
+        Scenario composition · not calibrated odds
       </footer>
     </>
   );

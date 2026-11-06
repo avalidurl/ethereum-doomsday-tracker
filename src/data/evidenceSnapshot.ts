@@ -4,7 +4,9 @@ import { PAGE_UPDATED, PAGE_VERSION } from "../sim/model";
 export type SourceStatus =
   | "reference / not ingested"
   | "reference / not fetched"
-  | "reference / not executed";
+  | "reference / not executed"
+  | "dossier digested / model-linked"
+  | "dossier partial / model-linked";
 
 export type SnapshotSource = {
   id: string;
@@ -34,56 +36,56 @@ export const EVIDENCE_SNAPSHOT = {
   weeklyReviewNote:
     "Owner-scheduled source reviews (Mondays ≈10:00 Europe/Istanbul, ±30 min) propose changes in chat only — no automatic research→publish or probability shifts.",
   modelUnchangedNote:
-    "Synthetic priors and the seeded Monte Carlo are unchanged by viewing this snapshot. Bands remain model-spread intervals, not calibrated CIs.",
+    "Opening this panel does not re-fetch sources or change odds. v0.3 priors are versioned in the prior registry; bands are epistemic model-spread plus Fréchet identification bounds — not calibrated CIs.",
   sources: [
     {
       id: "evmbench",
       title: "OpenAI EVMbench",
       url: "https://openai.com/index/introducing-evmbench/",
-      status: "reference / not ingested" as const,
+      status: "dossier digested / model-linked" as const,
       listedDate: "2026-02-18",
     },
     {
       id: "scone",
       title: "Anthropic smart contracts / SCONE",
       url: "https://www.anthropic.com/research/smart-contracts",
-      status: "reference / not ingested" as const,
+      status: "dossier digested / model-linked" as const,
     },
     {
       id: "hive",
       title: "Ethereum Hive",
       url: "https://hive.ethpandaops.io/",
-      status: "reference / not fetched" as const,
+      status: "dossier partial / model-linked" as const,
     },
     {
       id: "google-ecdlp",
       title: "Google Quantum AI ECDLP note",
       url: "https://research.google/blog/safeguarding-cryptocurrency-by-disclosing-quantum-vulnerabilities-responsibly/",
-      status: "reference / not ingested" as const,
+      status: "dossier digested / model-linked" as const,
     },
     {
       id: "ef-pq",
       title: "ethereum.org PQ roadmap",
       url: "https://ethereum.org/roadmap/security/quantum-resistance/",
-      status: "reference / not ingested" as const,
+      status: "dossier digested / model-linked" as const,
     },
     {
       id: "gri-2025",
       title: "GRI Quantum Threat Timeline 2025",
       url: "https://globalriskinstitute.org/publication/quantum-threat-timeline-report-2025b/",
-      status: "reference / not ingested" as const,
+      status: "dossier digested / model-linked" as const,
     },
     {
       id: "causis",
       title: "Causis CRQC",
       url: "https://quantum.causisresearch.com/",
-      status: "reference / not executed" as const,
+      status: "dossier digested / model-linked" as const,
     },
     {
       id: "metaculus-rsa",
       title: "Metaculus RSA-2048 QC date",
       url: "https://www.metaculus.com/questions/30596/date-of-rsa-2048-quantum-factorization/",
-      status: "reference / not ingested" as const,
+      status: "dossier partial / model-linked" as const,
     },
   ],
 } as const;
