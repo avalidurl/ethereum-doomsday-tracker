@@ -28,7 +28,7 @@ describe("EvidenceSnapshotPanel", () => {
     expect(region.textContent).not.toMatch(/not ingested/i);
     expect(screen.getByText(/OpenAI EVMbench/)).toBeTruthy();
     expect(region.textContent).toMatch(/Reviewed offline · full \(blog \+ PDF\)/);
-    expect(region.textContent).toMatch(/7 reviewed in full/i);
+    expect(region.textContent).toMatch(/13 reviewed in full/i);
     expect(region.textContent).toMatch(/not quantitatively fitted/i);
     expect(region.textContent).not.toMatch(/\bingest/i);
     expect(fetchSpy).not.toHaveBeenCalled();

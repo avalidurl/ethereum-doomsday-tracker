@@ -25,13 +25,15 @@ export type PriorEntry = {
 };
 
 export const REGISTRY_VERSION = "0.3.2";
-export const REGISTRY_AS_OF = "2026-11-06";
+export const REGISTRY_AS_OF = "2026-11-17";
 
 /** Metaculus 30596 — RSA-2048 factorization by QC (elicited crowd). NOT Ethereum ECDSA. */
 export const METACULUS_RSA_KNOTS: { year: number; cdf: number }[] = [
-  { year: 2030.45, cdf: 0.1 }, // ~10 Jun 2030
-  { year: 2033.68, cdf: 0.5 }, // ~5 Sep 2033 community center
-  { year: 2039.14, cdf: 0.9 }, // ~21 Feb 2039
+  // Public embed, latest aggregation (from 2026-11-11 20:01 UTC, 21 forecasters), checked 2026-11-17.
+  // Previous snapshot (2026-11-06/09): 2030.45 / 2033.68 / 2039.14.
+  { year: 2030.54, cdf: 0.1 }, // ~16 Jul 2030
+  { year: 2033.87, cdf: 0.5 }, // ~14 Nov 2033 community center
+  { year: 2039.23, cdf: 0.9 }, // ~26 Mar 2039
 ];
 
 /**
@@ -58,13 +60,13 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     units: "calendar year (date question → Jan 1 of resolve year)",
     kind: "elicited_published",
     sourceScope:
-      "Metaculus q30596 resolution criteria + recency-weighted community center/interval from public embed. Model knots = 2026-11-06 snapshot (unchanged on the 2026-11-09 check); page rechecked 2026-11-17. Not full authenticated API history.",
+      "Metaculus q30596 resolution criteria + recency-weighted community center/interval from public embed. Model knots = 2026-11-17 snapshot (latest aggregation from 2026-11-11). Not full authenticated API history.",
     sourceUrl: "https://www.metaculus.com/questions/30596/date-of-rsa-2048-quantum-factorization/",
     asOf: "2026-11-17",
     valueSummary:
-      "Model knots (2026-11-06/09 snapshot): center≈Sep 2033; ~Jun 2030–Feb 2039. Recheck 2026-11-17: page shows Nov 2033 (16 Jul 2030–Mar 2039); 26 forecasters on the page, 21 in the latest aggregation (20 on 2026-11-09)",
+      "center≈Nov 2033 (2033.87); ~16 Jul 2030–26 Mar 2039; 26 forecasters on the page, 21 in the latest aggregation. Previous knots (2026-11-06/09): Sep 2033; Jun 2030–Feb 2039",
     notes:
-      "RSA-2048 ≠ secp256k1 ECDLP. Must not be copied as Ethereum L1 failure probability. Fine print: classical factorization annuls. Knots are frozen at the cited snapshot; moving them to the 2026-11-17 values is a model change that needs owner approval.",
+      "RSA-2048 ≠ secp256k1 ECDLP. Must not be copied as Ethereum L1 failure probability. Fine print: classical factorization annuls. Knots refreshed to the 2026-11-17 snapshot in v0.3.6 (owner-approved); affects the optional RSA-proxy timeline only, not the default ETH-assumption headline.",
   },
   {
     id: "gri_2025_rsa_crqc",
@@ -91,7 +93,7 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     asOf: "2026-11-06",
     valueSummary: "CDF knots 0.1@2032, 0.5@2038, 0.9@2046 (adjustable)",
     notes:
-      "Google PDF: ETH threat framed as at-rest (account/admin/code/consensus/DA). Resource estimates ≠ calendar year. arXiv 2603.28846 v2 (15 Apr 2026) keeps the headline estimates (≤1200 logical/≤90M Toffoli or ≤1450/≤70M; <500k physical).",
+      "Google PDF: ETH threat framed as at-rest (account/admin/code/consensus/DA). Resource estimates ≠ calendar year. arXiv 2603.28846 v2 (15 Apr 2026) keeps the headline estimates (≤1200 logical/≤90M Toffoli or ≤1450/≤70M; <500k physical). Slow-hardware counterpart: IonQ arXiv 2609.05625 (4 Sep 2026) — ~1450 logical qubits, ~39–40M Toffoli, 19,397 physical trapped-ion qubits, ~25.7 days per attempt (success 40.7% rigorous / 63% heuristic). Context only; knots unchanged.",
   },
   {
     id: "eth_migration_complete_year",
@@ -99,11 +101,12 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     units: "calendar year",
     kind: "user_assumption",
     sourceScope:
-      "User-assumption knots; EF ethereum.org PQ page ontology only (page last updated 2026-10-23; activity section dated April 2026) — no dated commitment extracted",
+      "User-assumption knots; EF ethereum.org PQ page ontology (page last updated 2026-10-23; activity section dated April 2026). Context, not fitted: EF Protocol blog (2026-09-07) targets quantum resistance across execution, consensus and data by Dec 2029 and plans for Q-day as early as 2030; unofficial earlier signals: Justin Drake's Dec 2028 hope (Devcon 8, reported 2026-11-04) and the Ethlabs pqai27 proposal (2026-11-11, 2027).",
     sourceUrl: "https://ethereum.org/roadmap/security/quantum-resistance/",
     asOf: "2026-11-06",
     valueSummary: "CDF knots 0.1@2029, 0.5@2032, 0.9@2038 (adjustable)",
-    notes: "Unidentified from public EF page alone; slider remains assumption.",
+    notes:
+      "Unidentified from public sources; slider remains assumption. The EF Dec 2029 target is a self-imposed planning deadline (reassessed Jan 2027), not a completion date for user migration and residual cleanup, so the knots are unchanged.",
   },
   {
     id: "quantum_theft_peak_hazard",
@@ -114,7 +117,7 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     asOf: "2026-11-06",
     valueSummary: "Default 0.08 — restored legacy unidentified assumption; not calibrated",
     notes:
-      "EVMbench, SCONE and Anthropic's May 2026 exploit study are smart-contract (app-layer) evidence and excluded from this parameter.",
+      "EVMbench, SCONE, Anthropic's May 2026 exploit study and CyberChainBench (EMNLP 2026) are smart-contract (app-layer) evidence and excluded from this parameter. The Oct 2026 Binance theft (custody compromise, EIP-7702 delegation) is out of scope by definition.",
   },
   {
     id: "residual_exposure",
@@ -136,7 +139,8 @@ export const PRIOR_REGISTRY: PriorEntry[] = [
     sourceUrl: "https://hive.ethpandaops.io/generic/listing.jsonl",
     asOf: "2026-11-06",
     valueSummary: "Default 0.005 — restored legacy unidentified assumption; Hive not used as rate",
-    notes: "Do not treat Hive fail counts as P(outage).",
+    notes:
+      "Do not treat Hive fail counts as P(outage). Narrative examples only (not a rate): Nimbus mainnet fork-off 2026-02-08 (fixed in v26.2.0); Lighthouse PR #10569 pre-Gloas pubkey-cache fix (open as of 2026-11-17).",
   },
   {
     id: "scenario_client_stress_mult",
