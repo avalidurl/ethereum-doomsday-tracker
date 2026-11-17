@@ -240,6 +240,14 @@ export function Essay({ year, scenario, onScenario }: Props) {
           rumor.
         </p>
         <p>
+          Example of an excluded event: on 29–30 October 2026 attackers took about $6.3 billion from Binance across
+          several chains, according to Binance. On Ethereum, CoinDesk reports that an EIP-7702 permission signed by a
+          Binance wallet let an attacker’s contract drain about $2.5 billion in minutes. Binance says the breach began in
+          its own systems; it has not published the full attack path. The signatures came from Binance’s side and the
+          Ethereum protocol worked as specified, so this is a custody failure. It would not resolve this question Yes,
+          and it does not enter the odds.
+        </p>
+        <p>
           <strong>Adjudication recommendation (not an appointed person):</strong> pre-declared committee charter, COI
           rules, ambiguous-case log, frozen criteria before forecasting opens. Evidence hierarchy: converging client-team
           statements → reproducible mainnet artifacts → technical post-mortems → secondary journalism.
@@ -305,6 +313,14 @@ export function Essay({ year, scenario, onScenario }: Props) {
           smart-contract evidence only: it is kept out of the base-layer estimate and does not move any probability on
           this page.
         </p>
+        <p>
+          CyberChainBench (EMNLP 2026 Findings, an independent academic benchmark) tests agents on 541 real incidents
+          from DeFiHackLabs across 9 EVM chains, graded on forks of historical chain state. The best setup (Codex with
+          GPT‑5.5) scored 37.5% on detection, 43.7% on exploitation and 23.4% on patching, and realized $57.4 million of
+          simulated profit across its 200-case exploit set at about $2.39 per case. The exploit task gives the agent the
+          vulnerability type and function; counting only cases the same model also detected, exploitation drops to
+          13.8%. Like the studies above, it is smart-contract evidence only and stays out of the base-layer estimate.
+        </p>
       </Chapter>
 
       <Chapter id="hive" roman="VII" title="Hive client health">
@@ -313,6 +329,13 @@ export function Essay({ year, scenario, onScenario }: Props) {
           monitoring diversity. Offline review covered the public listing aggregate (partial scope). This page keeps a
           static summary and does not live-fetch Hive. Client health is not a calibrated L1 outage rate, and no direct
           public outage-rate evidence is claimed here.
+        </p>
+        <p>
+          Two recent examples show the kind of bug the client channel stands for. They are narrative only and are not
+          counted as a rate. On 8 February 2026 Nimbus nodes wrongly rejected a valid mainnet block and fell off the
+          canonical chain until restarted; the team traced it to a hashing-cache bug and fixed it in v26.2.0. In November 2026 Lighthouse
+          opened a fix (PR #10569) for a pubkey-cache flaw that could have split nodes around the upcoming Gloas fork;
+          it was still open, not merged, when checked on 17 November 2026, although some news reports called it merged.
         </p>
       </Chapter>
 
@@ -334,6 +357,24 @@ export function Essay({ year, scenario, onScenario }: Props) {
           Hegotá page now list EIP-8141 (frame transactions, which let accounts move to post-quantum signatures) as
           scheduled for inclusion; Hegotá is expected around Q2 2027 with no confirmed date. Whether it actually ships on
           mainnet is tracked below as a milestone; it does not change the migration assumption.
+        </p>
+        <p>
+          Hardware type changes the picture. IonQ’s September 2026 estimate (arXiv 2609.05625) is a slower-hardware
+          counterpart to Google’s: about 1,450 logical qubits and roughly 40 million Toffoli gates, run on 19,397
+          physical trapped-ion qubits in about 25.7 days per attempt (success about 41% on a rigorous bound, 63% on a
+          heuristic one). That is far fewer physical qubits than Google’s superconducting estimate but weeks instead of
+          minutes, which matters most for keys already exposed on-chain rather than for catching a transaction in
+          flight. Like Google’s, it is a resource estimate, not a date.
+        </p>
+        <p>
+          <strong>Official target vs unofficial signals.</strong> The EF Protocol cluster’s 7 September 2026 post sets
+          a self-imposed target for Ethereum to be quantum-resistant across execution, consensus and data by December
+          2029, says to plan for Q-day as early as 2030 as a deliberately aggressive assumption, and will reassess in
+          January 2027. Two earlier dates are unofficial: Justin Drake said at Devcon 8 it is his “hope” to finish by
+          December 2028 (reported by Cointelegraph, 4 November 2026), and Ethlabs proposed being post-quantum ready in
+          2027 (“pqai27”, 11 November 2026), which has not been adopted. None of these changes the migration
+          assumption on this page; the 2029 target is for protocol readiness, not for every user and dormant key
+          having moved.
         </p>
       </Chapter>
 
@@ -394,7 +435,7 @@ export function Essay({ year, scenario, onScenario }: Props) {
 
       <Chapter id="sources" roman="XI" title="Sources">
         <p>
-          Same status labels as the cached evidence snapshot (7 sources reviewed in full, 2 in partial scope). Evidence
+          Same status labels as the cached evidence snapshot (13 sources reviewed in full, 4 in partial scope; six of them context or narrative only). Evidence
           was reviewed offline before publish; this page shows a static summary and does not fetch or scrape sources when
           opened. Published benchmark results are described from papers/pages — harnesses are not run here. Sources may
           inform mechanism notes but are not quantitatively fitted into leaf hazard rates; direct public calibrated rates

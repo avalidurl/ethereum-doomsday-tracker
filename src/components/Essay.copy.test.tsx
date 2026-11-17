@@ -16,12 +16,16 @@ describe("Essay public copy", () => {
     expect(text).not.toMatch(/\bingest/i);
     expect(text).not.toContain("reference only / not ingested");
     // positive clarity anchors
-    expect(text).toMatch(/7 sources reviewed in full/);
+    expect(text).toMatch(/13 sources reviewed in full/);
     expect(text).toMatch(/not quantitatively fitted/);
     expect(text).toMatch(/harness is not run on this site/);
     // v0.3.5: blog vs paper EVMbench numbers credited separately
     expect(text).toMatch(/the blog post: 117 curated vulnerabilities/);
     expect(text).toMatch(/the paper pdf: 120 vulnerabilities/);
     expect(text).toMatch(/kept out of the base-layer estimate/);
+    // v0.3.6: context/narrative items clearly labelled
+    expect(text).toMatch(/unofficial/);
+    expect(text).toMatch(/narrative only/);
+    expect(text).toMatch(/19,397/);
   });
 });

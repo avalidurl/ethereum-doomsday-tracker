@@ -5,7 +5,8 @@ import { PAGE_UPDATED, PAGE_VERSION } from "../sim/model";
  * Shared by the cached evidence snapshot and the Sources table — keep them identical.
  *
  * Reader-facing distinctions (do not blur these):
- * - Reviewed offline = owner read the cited materials before publish (7 full, 2 partial).
+ * - Reviewed offline = owner read the cited materials before publish (13 full, 4 partial).
+ * - Context / narrative only = cited for background or examples; feeds no number in the model.
  * - Published results described = numbers/claims taken from papers/pages; harnesses not run here.
  * - Informs mechanism only = may shape narrative/framing; not a quantitatively fitted leaf hazard.
  * - Absent direct rate evidence = no public calibrated L1 outage/theft rate is claimed from these sources.
@@ -70,6 +71,28 @@ export const SOURCE_COVERAGE: readonly SourceCoverage[] = [
     executedHere: false,
   },
   {
+    id: "cyberchainbench",
+    title: "CyberChainBench (EMNLP 2026 Findings)",
+    url: "https://aclanthology.org/2026.findings-emnlp.1343/",
+    coverage: "partial",
+    scope:
+      "Paper PDF: abstract, results tables, exploit and temporal-shift sections (541 DeFiHackLabs incidents, 9 EVM chains, mainnet-fork grading)",
+    statusLabel:
+      "Reviewed offline · partial (abstract + results sections) · independent academic benchmark; smart-contract level only, kept out of the base-layer estimate; harness not run here",
+    executedHere: false,
+  },
+  {
+    id: "binance-7702",
+    title: "CoinDesk: how EIP-7702 was used in the Binance theft",
+    url: "https://www.coindesk.com/tech/2026/10/30/here-s-how-one-ethereum-permission-let-an-attacker-drain-usd2-5-billion-from-binance",
+    listedDate: "2026-10-30",
+    coverage: "full",
+    scope: "News report (full article); Binance's own account of the breach still incomplete",
+    statusLabel:
+      "Reviewed offline · full (article) · narrative example only: custody compromise, excluded from the odds by the resolution criteria",
+    executedHere: false,
+  },
+  {
     id: "hive",
     title: "Ethereum Hive",
     url: "https://hive.ethpandaops.io/",
@@ -77,6 +100,28 @@ export const SOURCE_COVERAGE: readonly SourceCoverage[] = [
     scope: "Public discovery.json + mainnet listing.jsonl aggregate — not every suite result file",
     statusLabel:
       "Reviewed offline · partial (public listing) · static summary on this page (not live-fetched) · not a calibrated L1 outage rate",
+    executedHere: false,
+  },
+  {
+    id: "nimbus-2026-02",
+    title: "Nimbus v26.2.0 release notes (mainnet fork-off, 8 Feb 2026)",
+    url: "https://github.com/status-im/nimbus-eth2/releases/tag/v26.2.0",
+    listedDate: "2026-02-14",
+    coverage: "full",
+    scope: "Client team release notes describing the 8 Feb 2026 mainnet incident and fix",
+    statusLabel:
+      "Reviewed offline · full (release notes) · narrative client-bug example only; not used as an outage rate",
+    executedHere: false,
+  },
+  {
+    id: "lighthouse-10569",
+    title: "Lighthouse PR #10569: pubkey cache fix before Gloas",
+    url: "https://github.com/sigp/lighthouse/pull/10569",
+    listedDate: "2026-11-12",
+    coverage: "full",
+    scope: "Pull request description; still open (not merged) when checked on 17 Nov 2026",
+    statusLabel:
+      "Reviewed offline · full (PR description; open, not merged, as of 17 Nov 2026) · narrative client-bug example only; not used as an outage rate",
     executedHere: false,
   },
   {
@@ -92,6 +137,17 @@ export const SOURCE_COVERAGE: readonly SourceCoverage[] = [
     executedHere: false,
   },
   {
+    id: "ionq-ecdlp",
+    title: "IonQ trapped-ion ECDLP estimate (arXiv 2609.05625)",
+    url: "https://arxiv.org/abs/2609.05625",
+    listedDate: "2026-09-04",
+    coverage: "partial",
+    scope: "Abstract, contributions and runtime/footprint summary of the paper PDF",
+    statusLabel:
+      "Reviewed offline · partial (abstract + summary sections) · slower-hardware counterpart to Google's estimate; resources are not a calendar year; not a fitted capability-year prior",
+    executedHere: false,
+  },
+  {
     id: "ef-pq",
     title: "ethereum.org PQ roadmap",
     url: "https://ethereum.org/roadmap/security/quantum-resistance/",
@@ -100,6 +156,39 @@ export const SOURCE_COVERAGE: readonly SourceCoverage[] = [
       "ethereum.org quantum-resistance roadmap page (last updated 23 Oct 2026; its activity section is dated April 2026)",
     statusLabel:
       "Reviewed offline · full (page last updated 23 Oct 2026; activity section dated April 2026) · informs migration-stage ontology; not a fitted migration-year prior",
+    executedHere: false,
+  },
+  {
+    id: "ef-protocol-priorities",
+    title: "EF Protocol: Current and Emerging Priorities",
+    url: "https://blog.ethereum.org/2026/09/07/protocol-priorities",
+    listedDate: "2026-09-07",
+    coverage: "full",
+    scope: "EF Protocol cluster blog post (Dec 2029 quantum-resistance target; plan for Q-day as early as 2030)",
+    statusLabel:
+      "Reviewed offline · full (post) · context for the migration assumption; the assumption itself is unchanged; not a fitted migration-year prior",
+    executedHere: false,
+  },
+  {
+    id: "drake-2028",
+    title: "Cointelegraph: Justin Drake's Dec 2028 hope (Devcon 8)",
+    url: "https://cointelegraph.com/news/ethereum-post-quantum-transition-2028-target",
+    listedDate: "2026-11-04",
+    coverage: "full",
+    scope: "News report of a Devcon talk; secondary source",
+    statusLabel:
+      "Reviewed offline · full (article) · unofficial, aspirational signal; not the EF roadmap; not used in the model",
+    executedHere: false,
+  },
+  {
+    id: "ethlabs-pqai27",
+    title: "Ethlabs: pqai27 proposal",
+    url: "https://ethlabs.org/writings/pqai27.html",
+    listedDate: "2026-11-11",
+    coverage: "full",
+    scope: "Ethlabs post (also on Ethereum Magicians) proposing post-quantum readiness in 2027",
+    statusLabel:
+      "Reviewed offline · full (post) · unofficial proposal, not adopted; not the EF roadmap; not used in the model",
     executedHere: false,
   },
   {
@@ -131,9 +220,9 @@ export const SOURCE_COVERAGE: readonly SourceCoverage[] = [
     url: "https://www.metaculus.com/questions/30596/date-of-rsa-2048-quantum-factorization/",
     coverage: "partial",
     scope:
-      "Public embed: resolution criteria, fine print, background, community forecast (rechecked 17 Nov 2026; API history incomplete)",
+      "Public embed: resolution criteria, fine print, background, community forecast (snapshot 17 Nov 2026; API history incomplete)",
     statusLabel:
-      "Reviewed offline · partial (criteria + forecast) · static summary on this page (not live-fetched) · optional RSA-proxy shape only; not ETH L1 odds",
+      "Reviewed offline · partial (criteria + forecast, snapshot 17 Nov 2026: centre Nov 2033) · static summary on this page (not live-fetched) · optional RSA-proxy shape only; not ETH L1 odds",
     executedHere: false,
   },
 ] as const;
@@ -154,9 +243,10 @@ export const EVIDENCE_SNAPSHOT = {
   publicationDate: PAGE_UPDATED,
   timezoneNote: "Europe/Istanbul",
   semantics: [
-    "Nine cited sources: 7 reviewed in full, 2 in partial scope (Hive public listing; Metaculus public embed).",
+    "Seventeen cited sources: 13 reviewed in full, 4 in partial scope (Hive public listing; Metaculus public embed; key sections of the IonQ and CyberChainBench papers).",
+    "Six are context or narrative only and feed no number: the EF 2029 target, Drake’s 2028 hope, the Ethlabs 2027 proposal, the Binance theft, and two client-bug examples.",
     "Reviewed offline before publish. This page shows a static summary — it does not fetch, scrape, or train on sources when opened.",
-    "EVMbench, SCONE and Anthropic’s 2026 exploit study: published results are described from their papers/pages; those harnesses are not run on this site. They concern smart contracts, not the base layer.",
+    "EVMbench, SCONE, Anthropic’s 2026 exploit study and CyberChainBench: published results are described from their papers/pages; those harnesses are not run on this site. They concern smart contracts, not the base layer.",
     "GRI, Metaculus and Causis are counted as one partly shared signal: Causis calibrates against GRI and builds in the Metaculus forecast.",
     "Sources may inform mechanism notes. They are not quantitatively fitted into leaf hazard rates. Direct public calibrated rates for those L1 hazards remain absent.",
     "Model assumptions live in the prior registry and are separate from source review. Opening this panel does not change scenario probabilities.",

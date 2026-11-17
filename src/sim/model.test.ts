@@ -197,7 +197,7 @@ describe("knot CDF/inverse coherence", () => {
 });
 
 describe("RSA proxy unshifted", () => {
-  it("rsa_proxy without override keeps Metaculus median (~2033.7)", () => {
+  it("rsa_proxy without override keeps Metaculus median (~2033.9)", () => {
     const k = buildQKnots({
       timelineMode: "rsa_proxy",
       qMu: 2038,
@@ -386,8 +386,8 @@ describe("v0.3.3 chart mean trajectories", () => {
 });
 
 describe("v0.3.3 effective Q center / RSA sensitivity", () => {
-  it("exposes cited source center ≈2033.68 and effectiveQCenter for rsa without override", () => {
-    expect(METACULUS_RSA_SOURCE_CENTER).toBeCloseTo(2033.68, 1);
+  it("exposes cited source center ≈2033.87 and effectiveQCenter for rsa without override", () => {
+    expect(METACULUS_RSA_SOURCE_CENTER).toBeCloseTo(2033.87, 5);
     expect(effectiveQCenter({
       timelineMode: "rsa_proxy",
       qMu: 2038,
