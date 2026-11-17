@@ -249,11 +249,13 @@ export function Essay({ year, scenario, onScenario }: Props) {
       <Chapter id="evmbench" roman="V" title="EVMbench constructs">
         <p>
           OpenAI + Paradigm introduced EVMbench (public post 18 February 2026) with three modes — Detect, Patch, Exploit
-          — and different denominators. Published metadata: 117 curated vulnerabilities from 40 audits; Rust harness;
-          historical vulns; isolated Anvil (not live networks). Blog-reported exploit-mode example: GPT‑5.3‑Codex via
-          Codex CLI 71.0% vs GPT‑5 33.3%. Detect/patch remain below full coverage. Those figures are described from the
-          published writeup (reviewed offline); the EVMbench harness is not run on this site and is not fitted into L1
-          hazard rates.
+          — and different denominators. Rust harness; historical vulns; isolated Anvil (not live networks). The two
+          documents report different numbers, so each is credited to its own source. The blog post: 117 curated
+          vulnerabilities from 40 audits; exploit mode GPT‑5.3‑Codex via Codex CLI 71.0% vs GPT‑5 33.3%. The paper PDF:
+          120 vulnerabilities from 40 repositories; GPT‑5.3‑Codex 72.2% on Exploit (95% interval 56.9–86.1%) and 41.5% on
+          Patch; Claude Opus 4.6 highest on Detect at 45.6%. Detect/patch remain below full coverage. Those figures are
+          described from the published blog and paper (reviewed offline); the EVMbench harness is not run on this site
+          and is not fitted into L1 hazard rates.
         </p>
         <table className="data">
           <thead>
@@ -294,6 +296,15 @@ export function Essay({ year, scenario, onScenario }: Props) {
           outlier sensitivity; simulated losses ≠ observed real-world losses. Published results are described from the
           research pages (reviewed offline); SCONE is not run on this site and is not fitted into L1 hazard rates.
         </p>
+        <p>
+          Anthropic’s 22 May 2026 exploit study reran an updated SCONE on 12 exploits reported after 1 January 2026
+          (after every tested model’s knowledge cutoff), in simulation with best-of-8 attempts. It reports that Mythos
+          Preview could exploit about $35 million of simulated contract value, and that revenue for its models
+          since Opus 4.5 doubles roughly every 0.7 months. The same page gives 1.1 months as the earlier doubling time,
+          while Anthropic’s December 2025 post said about 1.3 months; Anthropic does not reconcile the two. This is
+          smart-contract evidence only: it is kept out of the base-layer estimate and does not move any probability on
+          this page.
+        </p>
       </Chapter>
 
       <Chapter id="hive" roman="VII" title="Hive client health">
@@ -316,6 +327,14 @@ export function Essay({ year, scenario, onScenario }: Props) {
           Mainnet activation → Adoption / residual cleanup. Toy migration year M is a coarse “substantial completion”
           summary.
         </p>
+        <p>
+          Google’s whitepaper has an arXiv v2 (15 April 2026); its headline resource estimates are unchanged. The
+          ethereum.org quantum page was last updated 23 October 2026, but its “current activity” section is dated April
+          2026 and it still calls EIP-8141 “being considered” for Hegotá. The Hegotá meta EIP (EIP-8081) and ethereum.org’s
+          Hegotá page now list EIP-8141 (frame transactions, which let accounts move to post-quantum signatures) as
+          scheduled for inclusion; Hegotá is expected around Q2 2027 with no confirmed date. Whether it actually ships on
+          mainnet is tracked below as a milestone; it does not change the migration assumption.
+        </p>
       </Chapter>
 
       <Chapter id="provenance" roman="IX" title="Elicitation and market provenance">
@@ -324,6 +343,15 @@ export function Essay({ year, scenario, onScenario }: Props) {
           anchor on both are not independent votes when someone later averages “all sources.” v0.3 links them through a
           prior registry (elicited vs assumption vs unidentified) without stacking them as independent doom votes or
           porting RSA percentages onto Ethereum L1 failure.
+        </p>
+        <p>
+          This is not hypothetical: Causis names the GRI 2025 survey as its primary calibration benchmark and builds in the
+          Metaculus forecast, so the three count here as one partly shared signal. Causis’s elliptic-curve ratio (0.38)
+          comes from a 2017 paper and does not include Google’s 2026 estimate. GRI’s 26 experts (report dated 9 March
+          2026) put a cryptographically relevant quantum computer at 28–49% within 10 years and 51–70% within 15; on the
+          report’s most cautious reading the average reaches about 69% by 20 years. Causis quotes a 69–86% band for 20
+          years; the 86% figure does not appear in the GRI report text. All of these are about breaking RSA-2048, not
+          Ethereum’s signatures.
         </p>
         <ul className="subs">
           <li>Fréchet union bounds + named dependence scenarios (not fitted ρ)</li>
@@ -358,13 +386,15 @@ export function Essay({ year, scenario, onScenario }: Props) {
         </p>
         <p>
           <strong>Forward plan (not run):</strong> preregister milestones; score with log/Brier without lookahead; no
-          hindsight backtesting claimed here.
+          hindsight backtesting claimed here. Milestones tracked so far: the Metaculus RSA-2048 question; a mainnet
+          post-quantum signature path for ordinary accounts; and EIP-8141 shipping with Hegotá (already scheduled for
+          inclusion as of November 2026, so only the mainnet step can still be scored).
         </p>
       </Chapter>
 
       <Chapter id="sources" roman="XI" title="Sources">
         <p>
-          Same status labels as the cached evidence snapshot (6 sources reviewed in full, 2 in partial scope). Evidence
+          Same status labels as the cached evidence snapshot (7 sources reviewed in full, 2 in partial scope). Evidence
           was reviewed offline before publish; this page shows a static summary and does not fetch or scrape sources when
           opened. Published benchmark results are described from papers/pages — harnesses are not run here. Sources may
           inform mechanism notes but are not quantitatively fitted into leaf hazard rates; direct public calibrated rates

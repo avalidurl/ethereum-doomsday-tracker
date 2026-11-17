@@ -45,6 +45,18 @@ export const PROSPECTIVE_SCORECARD: ForecastArchiveRow[] = [
       "Yes if a mainnet hard fork enabling native PQ or hybrid PQ signatures for EOAs activates before resolveBy.",
     notes: "forecastP unset until owner freezes a stated P.",
   },
+  {
+    id: "milestone-eip-8141-hegota",
+    question:
+      "EIP-8141 (frame transactions — lets accounts switch to post-quantum signatures) ships on Ethereum mainnet as part of the Hegotá upgrade",
+    forecastVersion: "0.3.5",
+    forecastAt: "2026-11-17T12:00:00Z",
+    resolveBy: "2029-01-01",
+    resolutionCriteria:
+      "Yes if the Hegotá upgrade activates on mainnet with EIP-8141 (or its renumbered successor) included before resolveBy; No if Hegotá activates without it or nothing activates by then. Source: EIP-8081 (Hegotá meta EIP) and mainnet client releases.",
+    notes:
+      "Migration-enabling milestone, not an Ethereum L1 failure. Status on 2026-11-17: already Scheduled for Inclusion in Hegotá (EIP-8081; decision reported from the 28 Aug 2026 All Core Devs call), with the spec still expected to change; ethereum.org lists Hegotá as expected Q2 2027, date not confirmed. The scheduling step resolved before this row existed, so it is recorded, not scored. forecastP unset until owner freezes a stated P.",
+  },
 ];
 
 function validTs(iso: string): boolean {
