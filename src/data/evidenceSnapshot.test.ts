@@ -14,17 +14,17 @@ describe("EVIDENCE_SNAPSHOT checked-in record", () => {
     expect(EVIDENCE_SNAPSHOT.publicationDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(EVIDENCE_SNAPSHOT.title.toLowerCase()).toContain("cached");
     expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /does not fetch/i.test(s))).toBe(true);
-    expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /6 reviewed in full/i.test(s))).toBe(true);
+    expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /7 reviewed in full/i.test(s))).toBe(true);
     expect(EVIDENCE_SNAPSHOT.semantics.some((s) => /not quantitatively fitted/i.test(s))).toBe(true);
   });
 
   it("shares one authoritative SOURCE_COVERAGE list with honest full/partial scopes", () => {
     expect(EVIDENCE_SNAPSHOT.sources).toBe(SOURCE_COVERAGE);
-    expect(SOURCE_COVERAGE.length).toBe(8);
+    expect(SOURCE_COVERAGE.length).toBe(9);
     const full = SOURCE_COVERAGE.filter((s) => s.coverage === "full");
     const partial = SOURCE_COVERAGE.filter((s) => s.coverage === "partial");
     expect(full.map((s) => s.id).sort()).toEqual(
-      ["causis", "ef-pq", "evmbench", "google-ecdlp", "gri-2025", "scone"].sort(),
+      ["anthropic-exploit-evals", "causis", "ef-pq", "evmbench", "google-ecdlp", "gri-2025", "scone"].sort(),
     );
     expect(partial.map((s) => s.id).sort()).toEqual(["hive", "metaculus-rsa"].sort());
     for (const s of SOURCE_COVERAGE) {
@@ -35,6 +35,9 @@ describe("EVIDENCE_SNAPSHOT checked-in record", () => {
       expect(Object.keys(s)).not.toContain("checkedAt");
     }
     expect(SOURCE_COVERAGE.find((s) => s.id === "evmbench")!.statusLabel).toMatch(/harness not run here/i);
+    expect(SOURCE_COVERAGE.find((s) => s.id === "evmbench")!.statusLabel).toMatch(/blog and paper scores quoted separately/i);
+    expect(SOURCE_COVERAGE.find((s) => s.id === "anthropic-exploit-evals")!.statusLabel).toMatch(/kept out of the base-layer estimate/i);
+    expect(SOURCE_COVERAGE.find((s) => s.id === "causis")!.statusLabel).toMatch(/one partly shared signal/i);
     expect(SOURCE_COVERAGE.find((s) => s.id === "hive")!.statusLabel).toMatch(/partial/i);
     expect(SOURCE_COVERAGE.find((s) => s.id === "hive")!.statusLabel).toMatch(/not a calibrated L1 outage rate/i);
   });
@@ -63,7 +66,7 @@ describe("no network side effects on module load", () => {
     vi.stubGlobal("fetch", fetchSpy);
     vi.resetModules();
     const mod = await import("./evidenceSnapshot");
-    expect(mod.SOURCE_COVERAGE.length).toBe(8);
+    expect(mod.SOURCE_COVERAGE.length).toBe(9);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
